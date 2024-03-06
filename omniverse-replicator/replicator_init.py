@@ -35,10 +35,10 @@ with rep.new_layer():
 
 	def increment_time(shader_prim, shader_obj):
 		carb.log_info(f'Increment_time')
-		carb.log_info(f'"inputs:SHA" try value: {str(2.0)}')
+		carb.log_info(f'"inputs:SHA" try value: {str(3.0)}')
 		carb.log_info(f'"inputs:SHA" old value: {str(shader_prim.GetAttribute("inputs:SHA").Get())}')
-		with rep.get.prims("/Environment/sky/Looks/SkyMaterial/Shader"):
-			rep.modify.attribute("inputs:SHA", 2.0)  # input_prims=prim
+		with shader_obj:
+			rep.modify.attribute("inputs:SHA", 3.0)
 		carb.log_info(f'"inputs:SHA" new value: {str(shader_prim.GetAttribute("inputs:SHA").Get())}')
 		# change_attribute(shader_prim, shader_obj, "inputs:SHA", 2)
 		# change_attribute(shader_prim, shader_obj, "inputs:Azimuth", 2)
@@ -47,7 +47,7 @@ with rep.new_layer():
 		#with environment:
 		#rep.modify.attribute("focalLength", rep.distribution.uniform(10.0, 40.0))
 		#return environment.node
-		return shader_prim
+		return shader_obj.node
 
 
 	def scatter_ice(icicles):
@@ -58,7 +58,7 @@ with rep.new_layer():
 		return icicles.node
 
 	stage = omni.usd.get_context().get_stage()
-	rep.settings.set_render_pathtraced(samples_per_pixel=64)
+	#rep.settings.set_render_pathtraced(samples_per_pixel=64)
 	cameraPlane = rep.get.prims(path_pattern='/World/CameraPlane')
 	icePlane = rep.get.prims(path_pattern='/World/IcePlane')
 	# environment = rep.get.prims(path_pattern='/Environment')
@@ -94,9 +94,14 @@ with rep.new_layer():
 	icicles = rep.get.prims(semantics=[("class", "ice")])
 	#firstIcicle = rep.get.prims(path_pattern='/World/icicles')
 	#shader_prim = rep.GetPrimAtPath("/Environment/sky/Looks/SkyMaterial/Shader")
-	sun_shader_prim = stage.GetPrimAtPath("/Environment/sky/Looks/SkyMaterial/Shader")
-	shader = rep.get.prims("/Environment/sky/Looks/SkyMaterial/Shader")
+	
+	#sun_shader_prim = stage.GetPrimAtPath("/Environment/sky/Looks/SkyMaterial/Shader")
+	#shader = rep.get.prims("/Environment/sky/Looks/SkyMaterial/Shader")
+	
 	#shader_prim = stage.GetPrimAtPath("/Environment/sky/Looks/SkyMaterial/Shader")
+	
+	
+
 	render_product = rep.create.render_product(camera, (1024, 1024))
 	
 	carb.log_info(f'Register randomizers')
@@ -104,17 +109,30 @@ with rep.new_layer():
 	rep.randomizer.register(scatter_ice)
 	rep.randomizer.register(increment_time)
 
+	sky = rep.create.from_usd("https://omniverse-content-production.s3.us-west-2.amazonaws.com/Environments/2023_1/DomeLights/Dynamic/CumulusLight.usd")
+	
+	sun_shader_prim = stage.GetPrimAtPath("/Replicator/Ref_Xform/Ref/Looks/SkyMaterial/Shader")
+	sun_shader = rep.get.prims(path_pattern="/Replicator/Ref_Xform/Ref/Looks/SkyMaterial/Shader")
+
 	carb.log_info(f'Make attributes accessible')
 	make_asset_attribute_accessible(sun_shader_prim, "inputs:SHA", "")
 	make_asset_attribute_accessible(sun_shader_prim, "inputs:Azimuth", "")
 	make_asset_attribute_accessible(sun_shader_prim, "inputs:Elevation", "")
-	make_asset_attribute_accessible(sun_shader_prim, "inputs:SunColor", "")
+	#make_asset_attribute_accessible(sun_shader_prim, "inputs:SunColor", "")
+
+	# with rep.get.prims("/Replicator/Ref_Xform/Ref/Looks/SkyMaterial/Shader"):
+	# 	#rep.modify.attribute("inputs:TimeOfDay", 1.24)
+	# 	rep.modify.attribute("inputs:SHA", 1.24)
+	# 	rep.modify.attribute("inputs:Azimuth", 1.24)
+	# 	rep.modify.attribute("inputs:Elevation", 1.24)
+	# 	rep.modify.attribute("inputs:SunColor", (0.1, 0.5, 0.5))
+	
     
 	carb.log_info(f'rep.trigger.on_frame')
-	with rep.trigger.on_frame(num_frames=100, rt_subframes=50):  # rt_subframes=20
+	with rep.trigger.on_frame(num_frames=100):  # rt_subframes=50
 		rep.randomizer.scatter_ice(icicles)
 		rep.randomizer.randomize_camera()
-		rep.randomizer.increment_time(sun_shader_prim, shader)
+		rep.randomizer.increment_time(sun_shader_prim, rep.get.prims(path_pattern="/Replicator/Ref_Xform/Ref/Looks/SkyMaterial/Shader"))
 
 	writer = rep.WriterRegistry.get("BasicWriter")
 	writer.initialize(
@@ -123,5 +141,6 @@ with rep.new_layer():
 		bounding_box_2d_loose=True)
 
 	writer.attach([render_product])
-	asyncio.ensure_future(rep.orchestrator.step_async())
+	rep.orchestrator.preview()
+	#asyncio.ensure_future(rep.orchestrator.step_async())
 
