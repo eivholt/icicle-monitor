@@ -17,12 +17,12 @@ def make_asset_attribute_accessible(prim, attribute_name, attr_value):
 		carb.log_info(f'Set prim for {attribute_name}')
 		print(f'Set prim for {attribute_name}')
 
-# def change_attribute(prim, obj, attribute, value):
-# 	carb.log_info(f'{attribute} try value: {str(value)}')
-# 	carb.log_info(f'{attribute} old value: {str(prim.GetAttribute(attribute).Get())}')
-# 	with obj:
-# 		rep.modify.attribute(attribute, value)  # input_prims=prim
-# 	carb.log_info(f'{attribute} new value: {str(prim.GetAttribute(attribute).Get())}')
+def change_attribute(prim, obj, attribute, value):
+	carb.log_info(f'{attribute} try value: {str(value)}')
+	carb.log_info(f'{attribute} old value: {str(prim.GetAttribute(attribute).Get())}')
+	with obj:
+		rep.modify.attribute(attribute, value)  # input_prims=prim
+	carb.log_info(f'{attribute} new value: {str(prim.GetAttribute(attribute).Get())}')
 
 with rep.new_layer():
 	def randomize_camera():
@@ -34,16 +34,11 @@ with rep.new_layer():
 	
 
 	def increment_time(shader_prim, shader_obj):
-		carb.log_info(f'Increment_time')
-		carb.log_info(f'"inputs:SHA" try value: {str(3.0)}')
-		carb.log_info(f'"inputs:SHA" old value: {str(shader_prim.GetAttribute("inputs:SHA").Get())}')
-		with shader_obj:
-			rep.modify.attribute("inputs:SHA", 3.0)
-		carb.log_info(f'"inputs:SHA" new value: {str(shader_prim.GetAttribute("inputs:SHA").Get())}')
-		# change_attribute(shader_prim, shader_obj, "inputs:SHA", 2)
-		# change_attribute(shader_prim, shader_obj, "inputs:Azimuth", 2)
-		# change_attribute(shader_prim, shader_obj, "inputs:Elevation", 2)
-		# change_attribute(shader_prim, shader_obj, "inputs:SunColor", (0.6254826, 0.44967145, 0.18595429))
+		# carb.log_info(f'Increment_time')
+		change_attribute(shader_prim, shader_obj, "inputs:SHA", 134.6565399169922)
+		change_attribute(shader_prim, shader_obj, "inputs:Azimuth", 45.35400390625)
+		change_attribute(shader_prim, shader_obj, "inputs:Elevation", -8.07358169555664)
+		change_attribute(shader_prim, shader_obj, "inputs:SunColor", (0.6525097, 0.41065302, 0.047867507))
 		#with environment:
 		#rep.modify.attribute("focalLength", rep.distribution.uniform(10.0, 40.0))
 		#return environment.node
@@ -100,7 +95,6 @@ with rep.new_layer():
 	
 	#shader_prim = stage.GetPrimAtPath("/Environment/sky/Looks/SkyMaterial/Shader")
 	
-	
 
 	render_product = rep.create.render_product(camera, (1024, 1024))
 	
@@ -118,15 +112,7 @@ with rep.new_layer():
 	make_asset_attribute_accessible(sun_shader_prim, "inputs:SHA", "")
 	make_asset_attribute_accessible(sun_shader_prim, "inputs:Azimuth", "")
 	make_asset_attribute_accessible(sun_shader_prim, "inputs:Elevation", "")
-	#make_asset_attribute_accessible(sun_shader_prim, "inputs:SunColor", "")
-
-	# with rep.get.prims("/Replicator/Ref_Xform/Ref/Looks/SkyMaterial/Shader"):
-	# 	#rep.modify.attribute("inputs:TimeOfDay", 1.24)
-	# 	rep.modify.attribute("inputs:SHA", 1.24)
-	# 	rep.modify.attribute("inputs:Azimuth", 1.24)
-	# 	rep.modify.attribute("inputs:Elevation", 1.24)
-	# 	rep.modify.attribute("inputs:SunColor", (0.1, 0.5, 0.5))
-	
+	make_asset_attribute_accessible(sun_shader_prim, "inputs:SunColor", "")	
     
 	carb.log_info(f'rep.trigger.on_frame')
 	with rep.trigger.on_frame(num_frames=100):  # rt_subframes=50
