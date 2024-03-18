@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+omniverse-replicator/Assets
+omniverse-replicator/out*
+archive/
+bin/
+val2017/

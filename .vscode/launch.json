@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["omniverse-replicator/out"]
+            "args": ["omniverse-replicator/out12", "ei_4ade215c200d17fbe4418580fb0c1531911319e275d314348cf28711aeec8276"]
         }
     ]
 }
