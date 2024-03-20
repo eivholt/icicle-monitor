@@ -84,6 +84,7 @@ char ei_get_serial_byte(void) {
 }
 
 /* Private variables ------------------------------------------------------- */
+LoRaModem modem;
 static bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
 static bool is_initialised = false;
 static bool is_ll_initialised = false;
@@ -123,7 +124,7 @@ void setup()
     Serial.begin(115200);
     // comment out the below line to cancel the wait for USB connection (needed for native USB)
     while (!Serial);
-    Serial.println("Edge Impulse Inferencing Demo");
+    ei_printf("Edge Impulse Inferencing - Icicle Monitor\r\n");
 
 #ifdef EI_CAMERA_FRAME_BUFFER_SDRAM
     // initialise the SDRAM
@@ -148,6 +149,28 @@ void setup()
             }
         }
     }
+
+    // change this to your regional band (eg. US915, AS923, ...)
+    if (!modem.begin(EU868)) {
+      Serial.println("Failed to start module");
+      while (1) {}
+    };
+    Serial.print("Your module version is: ");
+    Serial.println(modem.version());
+    Serial.print("Your device EUI is: ");
+    Serial.println(modem.deviceEUI());
+
+    int connected = modem.joinOTAA(appEui, appKey);
+    if (!connected) {
+      ei_printf("Something went wrong; are you indoor? Move near a window and retry\r\n");
+      while (1) {}
+    }
+
+    // Set poll interval to 60 secs.
+    modem.minPollInterval(60);
+    // NOTE: independently by this setting the modem will
+    // not allow to send more than one message every 2 minutes,
+    // this is enforced by firmware and can not be changed.
 }
 
 /**
@@ -157,10 +180,10 @@ void setup()
 */
 void loop()
 {
-    ei_printf("\nStarting inferencing in 2 seconds...\n");
+    ei_printf("\nStarting inferencing in 10 seconds...\n");
 
     // instead of wait_ms, we'll wait on the signal, this allows threads to cancel us...
-    if (ei_sleep(2000) != EI_IMPULSE_OK) {
+    if (ei_sleep(10000) != EI_IMPULSE_OK) {
         return;
     }
 
@@ -198,6 +221,21 @@ void loop()
         ei_printf("    %s (", bb.label);
         ei_printf_float(bb.value);
         ei_printf(") [ x: %u, y: %u, width: %u, height: %u ]\n", bb.x, bb.y, bb.width, bb.height);
+    }
+
+    if(bb_found) {
+      int lora_err;
+      modem.setPort(1);
+      modem.beginPacket();
+      modem.write((uint8_t)1); // This sends the binary value 0x01
+      lora_err = modem.endPacket(true);
+      if (lora_err > 0) {
+        ei_printf("Message sent correctly!\r\n");
+      } else {
+        ei_printf("Error sending message: %d\r\n", lora_err);
+        ei_printf("(you may send a limited amount of messages per minute, depending on the signal strength\r\n");
+        ei_printf("it may vary from 1 message every couple of seconds to 1 message every minute)");
+      }
     }
 
     if (!bb_found) {
