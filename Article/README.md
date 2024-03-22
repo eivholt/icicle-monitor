@@ -30,7 +30,7 @@ A powerful platform combined with a high resolution camera with fish-eye lense w
 
 ## Limitations
 ### Weatherproofing
-The device enclosure is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to both be able to see through the enclosure and be water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The project in question also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
+The device enclosure is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The project in question also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
 
 ### Obscured view
 The project has no safe-guard against false negatives. The device will not report if it's view is blocked. This could be resolved by placing static markers on both sides of an area to monitor and included in synthetic training data. Absence of at least one marker could trigger a notification that the view is obscured.
@@ -46,6 +46,7 @@ To be able to compile a representation of our neural network and have it run on 
 
 ## Object detection using neural networks
 [FOMO (Faster Objects, More Objects)](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/object-detection/fomo-object-detection-for-constrained-devices) is a novel machine learning algorithm that allows for visual object detection on highly constrained devices through training of a neural network with a number of convolutional layers.
+
 ![](img/EILogo.svg "Edge Impulse")
 
 ### Capturing training data and labeling objects
@@ -131,6 +132,79 @@ with rep.trigger.on_frame(num_frames=2000, rt_subframes=50):
 We could instead generate textures with random shapes and colors. Either way, the resulting renders will look weird, but help the model training process weight features that are relevant for the icicles, not the background.
 
 These are rather unsofisticated approaches. More realistic results would be achieved by changing the [materials](https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials.html) of the actual walls of the house used as background. Omniverse has a large selection of available materials available in the NVIDIA Assets browser, allowing us to randomize a [much wider range of aspects](https://docs.omniverse.nvidia.com/extensions/latest/ext_replicator/randomizer_details.html) of the rendered results.
+
+## Deployment to device and LoRaWAN
+### Testing model on device using OpenMV
+To get visual verification our model works as intended we can go to Deployment in Edge Impulse Studio, select **OpenMV Firmware** as target and build. 
+
+![](img/OpenMV_deployment.png "Edge Impulse Studio Deployment OpenMV Firmware")
+
+Follow the [documentation](https://docs.edgeimpulse.com/docs/run-inference/running-your-impulse-openmv) on how to flash the device and to modify the ei_object_detection.py code. Remember to change: sensor.set_pixformat(sensor.GRAYSCALE)! The file edge_impulse_firmware_arduino_portenta.bin is our firmware for the Arduino Portenta H7 with Vision shield.
+
+![](img/OpenMV-testing.png "Testing model on device with OpenMV")
+
+### Deploy model as Arduino compatible library and send inference results to The Things Network with LoRaWAN
+Start by selecting Arduino library as Deployment target.
+
+![](img/EI-arduino-library.png "Deploy model as Arduino compatible library")
+
+Once built and downloaded, open Arduino IDE, go to **Sketch> Include Library> Add .zip Library ...** and locate the downloaded library. Next go to **File> Examples> [name of project]_inferencing> portenta_h7> portenat_h7_camera** to open a generic sketch template using our model. To test the model continuously and print the results to console this sketch is ready to go. The code might appear daunting, but we really only need to focus on the loop() function.
+
+![](img/EI-arduino-library-example.png "Arduino compatible library example sketch")
+
+### Transmit results to The Things Stack sandbox using LoRaWAN
+Using The Things Stack sandbox (formely known as The Things Network) we can create a low-power sensor network that allows transmitting device data with minimal energy consumption, long range without network fees. Your area might already be covered by a crowd funded network, or you can [initiate your own](https://www.thethingsnetwork.org/community/bodo/). [Getting started with LoRaWAN](https://www.thethingsindustries.com/docs/getting-started/) is really fun!
+
+![](img/ttn-map.png "The Things Network")
+
+Following the [Arduino guide](https://docs.arduino.cc/tutorials/portenta-vision-shield/connecting-to-ttn/) we create an application in The Things Stack sandbox and register our first device.
+
+![](img/ttn-app.png "The Things Stack application")
+
+![](img/ttn-device.png "The Things Stack device")
+
+Next we will simplify things by merging an example Arduino sketch for transmitting a LoRaWAN-message with the Edge Impulse generated object detection model code. Open the example sketch called LoraSendAndReceive included with the MKRWAN(v2) library mentioned in the [Arduino guide](https://docs.arduino.cc/tutorials/portenta-vision-shield/connecting-to-ttn/). In the [project code repository](https://github.com/eivholt/icicle-monitor/tree/main/portenta-h7/portenta_h7_camera_lora) we can find an Arduino sketch witht the merged code.
+
+![](img/arduino-lora.png "Arduino transmitting inference results over LoRaWAN")
+
+In short we perform inference evary 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application.
+
+```python
+if(bb_found) {
+    int lora_err;
+    modem.setPort(1);
+    modem.beginPacket();
+    modem.write((uint8_t)1); // This sends the binary value 0x01
+    lora_err = modem.endPacket(true);
+```
+
+In the The Things Stack application we need to define a function that will be used to decode the byte into a JSON structure that is easier to interpet when we pass the message further up the chain of services. The function can be found in the [project code repository](https://github.com/eivholt/icicle-monitor/tree/main/portenta-h7/portenta_h7_camera_lora).
+
+```javascript
+function Decoder(bytes, port) {
+    // Initialize the result object
+    var result = {
+        detected: false
+    };
+
+    // Check if the first byte is non-zero
+    if(bytes[0] !== 0) {
+        result.detected = true;
+    }
+
+    // Return the result
+    return result;
+}
+```
+
+* Integration with dashboards
+* Sun studies
+* Power profiling
+* Basic Writer to pascal voc
+* Markers, false negatives
+* Compile time... 61736466
+
+
 
 TinyML project to detect dangerous ice build-up on buildings.
 

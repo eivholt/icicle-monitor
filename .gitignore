@@ -36,3 +36,4 @@ omniverse-replicator/out*
 archive/
 bin/
 val2017/
+portenta-h7/portenta_h7_camera_lora/arduino_secrets.h
