@@ -167,7 +167,7 @@ Next we will simplify things by merging an example Arduino sketch for transmitti
 
 ![](img/arduino-lora.png "Arduino transmitting inference results over LoRaWAN")
 
-In short we perform inference evary 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application.
+In short we perform inference evary 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application. It is probably obvious that then binary payload is redundant, the presence of a message is enough
 
 ```python
 if(bb_found) {
@@ -178,7 +178,9 @@ if(bb_found) {
     lora_err = modem.endPacket(true);
 ```
 
-In the The Things Stack application we need to define a function that will be used to decode the byte into a JSON structure that is easier to interpet when we pass the message further up the chain of services. The function can be found in the [project code repository](https://github.com/eivholt/icicle-monitor/tree/main/portenta-h7/portenta_h7_camera_lora).
+In the The Things Stack application we need to define a function that will be used to decode the byte into a JSON structure that is easier to interpet when we pass the message further up the chain of services. The function can be found in the [project code repository](https://github.com/eivholt/icicle-monitor/blob/main/TheThingsStack/decoder.js).
+
+![](img/ttn-decoder.png "The Things Stack decoder")
 
 ```javascript
 function Decoder(bytes, port) {
@@ -196,6 +198,33 @@ function Decoder(bytes, port) {
     return result;
 }
 ```
+
+Now we can observe messages being received and decoded in **Live data** in TTS console.
+
+![](img/ttn-data.png "The Things Stack live data")
+
+An integral part of TTS is a MQTT message broker. At this point we can use [any MQTT client to subscribe to topics](https://www.thethingsindustries.com/docs/integrations/mqtt/mqtt-clients/) and create any suitable notification system for the end user. The following is a MQTT client written in Python to demonstrate the principle. Note that the library paho-mqtt has been used in a way so that it will block the program execution until two messages have been received. Then it will print the topic and payloads. A real-life implementation would rather register a callback and perform some action for each message received.
+
+```python
+# pip install paho-mqtt
+import paho.mqtt.subscribe as subscribe
+
+m = subscribe.simple(topics=['#'], hostname="eu1.cloud.thethings.network", port=1883, auth={'username':"icicle-monitor",'password':"NNSXS.V7RI4O2LW3..."}, msg_count=2)
+for a in m:
+    print(a.topic)
+    print(a.payload)
+```
+
+```json
+v3/icicle-monitor@ttn/devices/portenta-h7-icicle-00/up
+{"end_device_ids":{"device_id":"portenta-h7-icicle-00","application_ids":{"application_id":"icicle-monitor"},"dev_eui":"3036363266398F0D","join_eui":"0000000000000000","dev_addr":"260BED9C"},"correlation_ids":["gs:uplink:01HSKMT8KSZFJ7FB23RGSTJAEA"],"received_at":"2024-03-22T17:54:52.358270423Z","uplink_message":{"session_key_id":"AY5jAnqK0GdPG1yygjCmqQ==","f_port":1,"f_cnt":9,"frm_payload":"AQ==","decoded_payload":{"detected":true},"rx_metadata":[{"gateway_ids":{"gateway_id":"eui-ac1f09fffe09141b","eui":"AC1F09FFFE09141B"},"time":"2024-03-22T17:54:52.382076978Z","timestamp":254515139,"rssi":-51,"channel_rssi":-51,"snr":13.5,"location":{"latitude":67.2951736450195,"longitude":14.4321346282959,"altitude":50,"source":"SOURCE_REGISTRY"},"uplink_token":"CiIKIAoUZXVpLWFjMWYwOWZmZmUwOTE0MWISfCf/+CRQbEMOvrnkaCwjsi/evBhDurYRJILijo5K00mQ=","received_at":"2024-03-22T17:54:52.125610010Z"}],"settings":{"data_rate":{"lora":{"bandwidth":125000,"spreading_factor":7,"coding_rate":"4/5"}},"frequency":"867300000","timestamp":254515139,"time":"2024-03-22T17:54:52.382076978Z"},"received_at":"2024-03-22T17:54:52.154041574Z","confirmed":true,"consumed_airtime":"0.046336s","locations":{"user":{"latitude":67.2951772015745,"longitude":14.43232297897339,"altitude":13,"source":"SOURCE_REGISTRY"}},"version_ids":{"brand_id":"arduino","model_id":"lora-vision-shield","hardware_version":"1.0","firmware_version":"1.2.1","band_id":"EU_863_870"},"network_ids":{"net_id":"000013","ns_id":"EC656E0000000181","tenant_id":"ttn","cluster_id":"eu1","cluster_address":"eu1.cloud.thethings.network"}}}'
+
+v3/icicle-monitor@ttn/devices/portenta-h7-icicle-00/up
+{"end_device_ids":{"device_id":"portenta-h7-icicle-00","application_ids":{"application_id":"icicle-monitor"},"dev_eui":"3036363266398F0D","join_eui":"0000000000000000"},"correlation_ids":["as:up:01HSKMTN7F60CC3BQXE06B3Q4X","rpc:/ttn.lorawan.v3.AppAs/SimulateUplink:17b97b44-a5cd-45f0-9439-2de42e187300"],"received_at":"2024-03-22T17:55:05.070404295Z","uplink_message":{"f_port":1,"frm_payload":"AQ==","decoded_payload":{"detected":true},"rx_metadata":[{"gateway_ids":{"gateway_id":"test"},"rssi":42,"channel_rssi":42,"snr":4.2}],"settings":{"data_rate":{"lora":{"bandwidth":125000,"spreading_factor":7}},"frequency":"868000000"},"locations":{"user":{"latitude":67.2951772015745,"longitude":14.43232297897339,"altitude":13,"source":"SOURCE_REGISTRY"}}},"simulated":true}'
+```
+Observe the difference in the real uplink (first) and simulated uplink (last). In both we find "decoded_payload":{"detected":true}.
+
+TTS has a range of [integration options](https://www.thethingsindustries.com/docs/integrations/) for spesific platforms, or you could set up a [custom webhook using standard HTTP/REST](https://www.thethingsindustries.com/docs/integrations/webhooks/) mechanisms.
 
 * Integration with dashboards
 * Sun studies
