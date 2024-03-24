@@ -178,6 +178,23 @@ if(bb_found) {
     lora_err = modem.endPacket(true);
 ```
 
+A few things to consider in the implementation:
+The device should enter deep sleep mode and disable/put to sleep all periferals between object detection. Default operation of the Portenta H7 with the Vision shield consumes a lot of energy and will drain battery quickly. To find out how much energy is consumed we can use a device such as the [Otii Arc from Qoitech](https://www.qoitech.com/otii-arc-pro/). Hook up positive power supply to VIN, negative to GND. Since VIN bypasses the Portenta power regulator we should provide 5V, however in my setup the Otii Arc is limited to 4.55V. Luckily it seems to be sufficient and we can take some measurements. By connecting the Otii Arc pin RX to the Portenta pin D14/PA9/UART1 TX, in code we can write debug messages to Serial1. This is increadibly helpful in establishing what power consumption is associated with what part of the code.
+
+![](img/portenta_h7_power.png "Arduino Portenta H7 power specs")
+
+![](img/portenta_h7_pinout.png "Arduino Portenta H7 pin-out")
+
+![](img/otii-arc-portenta.png "Otii Arc hook-up")
+
+![](img/otii-icicle-profile.png "Otii Arc power profile")
+
+As we can see the highlighted section should be optimized for minimal power consumption. This is out of scope for this article, but provided are some examples for guidance: [snow monitor](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8#toc-power-profiling-16), [mail box sensor](https://community.element14.com/challenges-projects/project14/rf/b/blog/posts/got-mail-lorawan-mail-box-sensor).
+
+The project code runs inference on an image every 10 seconds. This is for demonstration purposes and should be much less frequent, like once per hour during daylight. Have a look at this project for an example of how to [remotely control inference interval](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8#toc-lora-application-14) via LoRaWAN downlink message. This could be further controlled automatically via an application that has access to an [API for daylight data](https://developer.yr.no/doc/GettingStarted/).
+
+![](img/yr-sun.png "YR weather API")
+
 In the The Things Stack application we need to define a function that will be used to decode the byte into a JSON structure that is easier to interpet when we pass the message further up the chain of services. The function can be found in the [project code repository](https://github.com/eivholt/icicle-monitor/blob/main/TheThingsStack/decoder.js).
 
 ![](img/ttn-decoder.png "The Things Stack decoder")

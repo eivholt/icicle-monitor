@@ -114,6 +114,10 @@ void ei_camera_deinit(void);
 bool ei_camera_capture(uint32_t img_width, uint32_t img_height, uint8_t *out_buf) ;
 int calculate_resize_dimensions(uint32_t out_width, uint32_t out_height, uint32_t *resize_col_sz, uint32_t *resize_row_sz, bool *do_resize);
 
+void Debugln(String message);
+void Debugln(String message, String info);
+void Debug(String message);
+String EI_IMPULSE_ERROR_ToString(EI_IMPULSE_ERROR error);
 
 /**
 * @brief      Arduino setup function
@@ -122,9 +126,10 @@ void setup()
 {
     // put your setup code here, to run once:
     Serial.begin(115200);
+    Serial1.begin(115200);
     // comment out the below line to cancel the wait for USB connection (needed for native USB)
-    while (!Serial);
-    ei_printf("Edge Impulse Inferencing - Icicle Monitor\r\n");
+    // while (!Serial);
+    Debugln("Edge Impulse Inferencing - Icicle Monitor\r\n");
 
 #ifdef EI_CAMERA_FRAME_BUFFER_SDRAM
     // initialise the SDRAM
@@ -132,10 +137,10 @@ void setup()
 #endif
 
     if (ei_camera_init() == false) {
-        ei_printf("Failed to initialize Camera!\r\n");
+        Debugln("Failed to initialize Camera!");
     }
     else {
-        ei_printf("Camera initialized\r\n");
+        Debugln("Camera initialized");
     }
 
     for (size_t ix = 0; ix < ei_dsp_blocks_size; ix++) {
@@ -144,7 +149,7 @@ void setup()
             ei_dsp_config_image_t config = *((ei_dsp_config_image_t*)block.config);
             int16_t channel_count = strcmp(config.channels, "Grayscale") == 0 ? 1 : 3;
             if (channel_count == 3) {
-                ei_printf("WARN: You've deployed a color model, but the Arduino Portenta H7 only has a monochrome image sensor. Set your DSP block to 'Grayscale' for best performance.\r\n");
+                Debugln("WARN: You've deployed a color model, but the Arduino Portenta H7 only has a monochrome image sensor. Set your DSP block to 'Grayscale' for best performance.");
                 break; // only print this once
             }
         }
@@ -155,14 +160,14 @@ void setup()
       Serial.println("Failed to start module");
       while (1) {}
     };
-    Serial.print("Your module version is: ");
-    Serial.println(modem.version());
-    Serial.print("Your device EUI is: ");
-    Serial.println(modem.deviceEUI());
+    Debugln("Your module version is: ");
+    Debugln(modem.version().toString());
+    Debugln("Your device EUI is: ");
+    Debugln(modem.deviceEUI());
 
     int connected = modem.joinOTAA(appEui, appKey);
     if (!connected) {
-      ei_printf("Something went wrong; are you indoor? Move near a window and retry\r\n");
+      Debugln("Something went wrong; are you indoor? Move near a window and retry");
       while (1) {}
     }
 
@@ -180,21 +185,21 @@ void setup()
 */
 void loop()
 {
-    ei_printf("\nStarting inferencing in 10 seconds...\n");
+    Debugln("\nStarting inferencing in 10 seconds...\n");
 
     // instead of wait_ms, we'll wait on the signal, this allows threads to cancel us...
     if (ei_sleep(10000) != EI_IMPULSE_OK) {
         return;
     }
 
-    ei_printf("Taking photo...\n");
+    Debugln("Taking photo...\n");
 
     ei::signal_t signal;
     signal.total_length = EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT;
     signal.get_data = &ei_camera_cutout_get_data;
 
     if (ei_camera_capture((size_t)EI_CLASSIFIER_INPUT_WIDTH, (size_t)EI_CLASSIFIER_INPUT_HEIGHT, NULL) == false) {
-        ei_printf("Failed to capture image\r\n");
+        Debugln("Failed to capture image");
         return;
     }
 
@@ -203,13 +208,15 @@ void loop()
 
     EI_IMPULSE_ERROR err = run_classifier(&signal, &result, debug_nn);
     if (err != EI_IMPULSE_OK) {
-        ei_printf("ERR: Failed to run classifier (%d)\n", err);
+        Debugln("ERR: Failed to run classifier (%d)", EI_IMPULSE_ERROR_ToString(err));
         return;
     }
 
     // print the predictions
-    ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
-                result.timing.dsp, result.timing.classification, result.timing.anomaly);
+    String prediction = "Predictions (DSP: " + String(result.timing.dsp) +
+                 " ms., Classification: " + String(result.timing.classification) +
+                 " ms., Anomaly: " + String(result.timing.anomaly) + " ms.): ";
+    Debugln(prediction);
 #if EI_CLASSIFIER_OBJECT_DETECTION == 1
     bool bb_found = result.bounding_boxes[0].value > 0;
     for (size_t ix = 0; ix < result.bounding_boxes_count; ix++) {
@@ -218,9 +225,8 @@ void loop()
             continue;
         }
 
-        ei_printf("    %s (", bb.label);
-        ei_printf_float(bb.value);
-        ei_printf(") [ x: %u, y: %u, width: %u, height: %u ]\n", bb.x, bb.y, bb.width, bb.height);
+        String prediction = "     " + String(bb.label) + "(" + String(bb.value, 2) + ") [ x: " + String(bb.x) + ", y: " + String(bb.y) + ", width: " + String(bb.width) + ", height: " + String(bb.height) + " ]";
+        Debugln(prediction);
     }
 
     if(bb_found) {
@@ -230,29 +236,74 @@ void loop()
       modem.write((uint8_t)1); // This sends the binary value 0x01
       lora_err = modem.endPacket(true);
       if (lora_err > 0) {
-        ei_printf("Message sent correctly!\r\n");
+        Debugln("Message sent correctly!");
       } else {
-        ei_printf("Error sending message: %d\r\n", lora_err);
-        ei_printf("(you may send a limited amount of messages per minute, depending on the signal strength\r\n");
-        ei_printf("it may vary from 1 message every couple of seconds to 1 message every minute)");
+        Debugln("Error sending message: ", String(lora_err));
+        Debugln("(you may send a limited amount of messages per minute, depending on the signal strength");
+        Debugln("it may vary from 1 message every couple of seconds to 1 message every minute)");
       }
     }
 
     if (!bb_found) {
-        ei_printf("    No objects found\n");
+        Debugln("    No objects found");
     }
 #else
     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-        ei_printf("    %s: ", result.classification[ix].label);
-        ei_printf_float(result.classification[ix].value);
-        ei_printf("\n");
+        Debug(String("    %s: " + result.classification[ix].label);
+        Debugln(String(result.classification[ix].value));
     }
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
-    ei_printf("    anomaly score: ");
-    ei_printf_float(result.anomaly);
-    ei_printf("\n");
+    Debug("    anomaly score: ");
+    Debugln(String(result.anomaly));
 #endif
 #endif
+}
+
+void Debugln(String message) {
+  Serial.println(message);
+  Serial1.println(message);
+}
+
+void Debugln(String message, String info) {
+  String combinedMessage = message + " " + info;
+  Serial.println(combinedMessage);
+  Serial1.println(combinedMessage);
+}
+
+void Debug(String message) {
+  Serial.print(message);
+  Serial1.print(message);
+}
+
+String EI_IMPULSE_ERROR_ToString(EI_IMPULSE_ERROR error) {
+    switch (error) {
+        case EI_IMPULSE_OK: return "OK";
+        case EI_IMPULSE_ERROR_SHAPES_DONT_MATCH: return "Error: Shapes don't match";
+        case EI_IMPULSE_CANCELED: return "Canceled";
+        case EI_IMPULSE_TFLITE_ERROR: return "TFLite error";
+        case EI_IMPULSE_DSP_ERROR: return "DSP error";
+        case EI_IMPULSE_TFLITE_ARENA_ALLOC_FAILED: return "TFLite arena alloc failed";
+        case EI_IMPULSE_CUBEAI_ERROR: return "CubeAI error";
+        case EI_IMPULSE_ALLOC_FAILED: return "Alloc failed";
+        case EI_IMPULSE_ONLY_SUPPORTED_FOR_IMAGES: return "Only supported for images";
+        case EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE: return "Unsupported inferencing engine";
+        case EI_IMPULSE_OUT_OF_MEMORY: return "Out of memory";
+        case EI_IMPULSE_INPUT_TENSOR_WAS_NULL: return "Input tensor was null";
+        case EI_IMPULSE_OUTPUT_TENSOR_WAS_NULL: return "Output tensor was null";
+        case EI_IMPULSE_SCORE_TENSOR_WAS_NULL: return "Score tensor was null";
+        case EI_IMPULSE_LABEL_TENSOR_WAS_NULL: return "Label tensor was null";
+        case EI_IMPULSE_TENSORRT_INIT_FAILED: return "TensorRT init failed";
+        case EI_IMPULSE_DRPAI_INIT_FAILED: return "DRPAI init failed";
+        case EI_IMPULSE_DRPAI_RUNTIME_FAILED: return "DRPAI runtime failed";
+        case EI_IMPULSE_DEPRECATED_MODEL: return "Deprecated model";
+        case EI_IMPULSE_LAST_LAYER_NOT_AVAILABLE: return "Last layer not available";
+        case EI_IMPULSE_INFERENCE_ERROR: return "Inference error";
+        case EI_IMPULSE_AKIDA_ERROR: return "Akida error";
+        case EI_IMPULSE_INVALID_SIZE: return "Invalid size";
+        case EI_IMPULSE_ONNX_ERROR: return "ONNX error";
+        case EI_IMPULSE_MEMRYX_ERROR: return "MemryX error";
+        default: return "Unknown error";
+    }
 }
 
 /**
@@ -265,14 +316,14 @@ bool ei_camera_init(void) {
 
     if (is_ll_initialised == false) {
         if (!cam.begin(CAMERA_R320x240, CAMERA_GRAYSCALE, 30)) {
-            ei_printf("ERR: Failed to initialise camera\r\n");
+            Debugln("ERR: Failed to initialise camera");
             return false;
         }
 
     #ifdef EI_CAMERA_FRAME_BUFFER_SDRAM
         ei_camera_frame_mem = (uint8_t *) SDRAM.malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS + 32 /*alignment*/);
         if(ei_camera_frame_mem == NULL) {
-            ei_printf("failed to create ei_camera_frame_mem\r\n");
+            Debugln("failed to create ei_camera_frame_mem");
             return false;
         }
         ei_camera_frame_buffer = (uint8_t *)ALIGN_PTR((uintptr_t)ei_camera_frame_mem, 32);
@@ -285,7 +336,7 @@ bool ei_camera_init(void) {
 #if defined(EI_CAMERA_FRAME_BUFFER_HEAP)
     ei_camera_frame_mem = (uint8_t *) ei_malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS + 32 /*alignment*/);
     if(ei_camera_frame_mem == NULL) {
-        ei_printf("failed to create ei_camera_frame_mem\r\n");
+        Debugln("failed to create ei_camera_frame_mem");
         return false;
     }
     ei_camera_frame_buffer = (uint8_t *)ALIGN_PTR((uintptr_t)ei_camera_frame_mem, 32);
@@ -327,13 +378,13 @@ bool ei_camera_capture(uint32_t img_width, uint32_t img_height, uint8_t *out_buf
     bool do_crop = false;
 
     if (!is_initialised) {
-        ei_printf("ERR: Camera is not initialized\r\n");
+        Debugln("ERR: Camera is not initialized");
         return false;
     }
 
     int snapshot_response = cam.grabFrame(fb, 3000);
     if (snapshot_response != 0) {
-        ei_printf("ERR: Failed to get snapshot (%d)\r\n", snapshot_response);
+        Debugln("ERR: Failed to get snapshot (%d)", String(snapshot_response));
         return false;
     }
 
@@ -342,7 +393,7 @@ bool ei_camera_capture(uint32_t img_width, uint32_t img_height, uint8_t *out_buf
     // choose resize dimensions
     int res = calculate_resize_dimensions(img_width, img_height, &resize_col_sz, &resize_row_sz, &do_resize);
     if (res) {
-        ei_printf("ERR: Failed to calculate resize dimensions (%d)\r\n", res);
+        Debugln(String("ERR: Failed to calculate resize dimensions ") + String(res));
         return false;
     }
 
