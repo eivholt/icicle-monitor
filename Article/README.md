@@ -1,17 +1,19 @@
-# Rooftop ice buildup detection using Edge Impulse with synthetic data created with NVIDIA Omniverse Replicator
+# Rooftop ice buildup detection using Edge Impulse with synthetic data created with NVIDIA Omniverse Replicator and sun studies
 
 ## Intro
-This portable device monitors buildings and warns when potential hazardous icicles are formed. In ideal conditions icicles can form at a rate of [more than 1 cm (0.39 in) per minute](https://en.wikipedia.org/wiki/Icicle). As numerous people are injured and killed by these solid projectiles each year, responsible building owners often close sidewalks in the spring to minimize risk. This project demonstrates how an extra set of digital eyes can notify property owners icicles are forming and need to be removed before they can cause harm.
+This portable device monitors buildings and warns the responsible when potential hazardous icicles are formed. In ideal conditions icicles can form at a rate of [more than 1 cm (0.39 in) per minute](https://en.wikipedia.org/wiki/Icicle). As many people are injured and killed by these solid projectiles each year, responsible building owners often close sidewalks in the spring to minimize risk. This project demonstrates how an extra set of digital eyes can notify property owners icicles are forming and need to be removed before they can cause harm.
 
 ## Hardware used:
 * [Arduino Portena H7](https://docs.arduino.cc/hardware/portenta-h7/)
 * [Arduino Portena Vision Shield w/LoRa Connectivity](https://docs.arduino.cc/hardware/portenta-vision-shield/)
 * NVIDIA GeForce RTX
 * Formlabs Form 2 3D printer
+* [Otii Arc from Qoitech](https://www.qoitech.com/otii-arc-pro/)
 
 ## Software used:
 * [Edge Impulse Studio](https://studio.edgeimpulse.com/studio)
 * [NVIDIA Omniverse Code](https://www.nvidia.com/en-us/omniverse/) with [Replicator](https://developer.nvidia.com/omniverse/replicator)
+* [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) with [Edge Impulse extension](https://github.com/edgeimpulse/edge-impulse-omniverse-ext)
 * [Visual Studio Code](https://code.visualstudio.com/)
 * [Blender](https://www.blender.org/)
 * [Autodesk Fusion 360](https://www.autodesk.no/products/fusion-360/)
@@ -20,29 +22,44 @@ This portable device monitors buildings and warns when potential hazardous icicl
 Project [Impulse](https://studio.edgeimpulse.com/public/332581/latest) and [code repository](https://github.com/eivholt/icicle-monitor).
 
 ## Working principle
-Forming icicles are detected using a neural network with an architecture aimed at detecting objects in images from the on-board camera. The NN is trained and tested exclusively on synthesized images. The images are generated with realistic simulated lighting conditions. A small amount of real images are used to verify the model.
+Forming icicles are detected using a neural network(NN) with an architecture aimed at detecting objects in images from the on-board camera. The NN is trained and tested exclusively on synthesized images. The images are generated with realistic simulated lighting conditions. A small amount of real images are used to verify the model.
 
 ## Challenges
-The main challenge of detecting forming icicles is the transparent nature of ice. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. We can mitigate this problem by synthesizing a lot of images, but we need to be able to vary lighting conditions in a realistic manner.
+The main challenge of detecting forming icicles is the transparent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is increadibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
 
 ## Mobility
-A powerful platform combined with a high resolution camera with fish-eye lense would increase the ability to detect icicles. However, by implementing the object detection model on a small, power-efficient, but highly constrained device, options for deployment increase. Properly protected against moisture this device can be mounted outdoors on poles facing roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
+A powerful platform combined with a high resolution camera with fish-eye lense would increase the ability to detect icicles. However, by deploying the object detection model to a small, power-efficient, but highly constrained device, options for device installation increase. Properly protected against moisture this device can be mounted outdoors on walls or poles facing the roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
 
 ## Limitations
 ### Weatherproofing
-The device enclosure is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The project in question also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
+The device enclosure made for this proof-of-concept is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
 
 ### Obscured view
 The project has no safe-guard against false negatives. The device will not report if it's view is blocked. This could be resolved by placing static markers on both sides of an area to monitor and included in synthetic training data. Absence of at least one marker could trigger a notification that the view is obscured.
 
+![](img/marker.png "Markers to avoid false negatives")
+
 ### Object scale
 Due to optimization techniques in Faster Objects - More Objects (FoMo) determining relative sizes of the icicles is not feasible. As even icicles with small mass can be harmful at moderate elevation this is not a crucial feature.
+
+![](img/object-scale.png "Object scale")
 
 ### Exact number of icicles
 The object detection model has not been trained to give an exact number of icicles in view. This has no practical implication other than the model verification results appearing worse than practical performance.
 
+![](img/grouping.png "Icicle grouping")
+
+### Non-vertical icicles
+Icicles can appear bent or angled either due to wind or more commonly due to ice and snow masses slowly dropping over roof edges. The dataset generated in this project does not cover this, but it would not take a lot of effort to extend the domain randomization to rotate or warp the icicles.
+
+![](img/AULSSON_EBBA.png "AULSSON_EBBA")
+
+![](img/Martin-Cathrae.png "Martin Cathrae")
+
 ### Grayscale
 To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portena H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this will not affect the results.
+
+![](img/grayscale1.png "Grayscale")
 
 ## Object detection using neural networks
 [FOMO (Faster Objects, More Objects)](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/object-detection/fomo-object-detection-for-constrained-devices) is a novel machine learning algorithm that allows for visual object detection on highly constrained devices through training of a neural network with a number of convolutional layers.
@@ -58,6 +75,10 @@ NVIDIA Omniverse Code is an IDE that allows us to compose 3D scenes and to write
 ### Making a scene
 It's possible to create an empty scene in Omniverse and add content programmatically. However, composing initial objects by hand serves as a practical starting point. In this project a royalty free 3D model of a house was used as a basis.
 
+![](img/house.png "3D house model")
+
+
+
 ### Icicles
 
 ### Randomizing colors
@@ -69,10 +90,10 @@ In code, define a function that takes in a reference to the plane we want to ran
 
 ```python
 def randomize_screen(screen):
-		with screen:
-			# Randomize each RGB channel for the whole color spectrum.
-            rep.randomizer.color(colors=rep.distribution.uniform((0, 0, 0), (1, 1, 1)))
-		return screen.node
+    with screen:
+        # Randomize each RGB channel for the whole color spectrum.
+        rep.randomizer.color(colors=rep.distribution.uniform((0, 0, 0), (1, 1, 1)))
+    return screen.node
 ```
 
 Then get a reference to the plane:
@@ -86,20 +107,20 @@ Lastly register the function and trigger it on each new frame:
 ```python
 rep.randomizer.register(randomize_screen)
 with rep.trigger.on_frame(num_frames=2000, rt_subframes=50):  # rt_subframes=50
-        # Other randomization functions...
-		rep.randomizer.randomize_screen(screen)
+    # Other randomization functions...
+    rep.randomizer.randomize_screen(screen)
 ```
 
 Now each image will have a background with random (deterministic, same starting seed) RGB color. Replicator takes care of creating a material with a shader for us. As you might remember, in an effort to reduce RAM usage our neural network reduces RGB color channels to grayscale. In this project we could simplify the color randomization to only pick grayscale colors. The example has been included as it would benefit in projects where color information is not reduced. To only randomize in grayscale, we could change the code in the randomization function to use the same value for R, G and B as follows:
 
 ```python
 def randomize_screen(screen):
-		with screen:
-			# Generate a single random value for grayscale
-			gray_value = rep.distribution.uniform(0, 1)
-			# Apply this value across all RGB channels to ensure the color is grayscale
-			rep.randomizer.color(colors=gray_value)
-		return screen.node
+    with screen:
+        # Generate a single random value for grayscale
+        gray_value = rep.distribution.uniform(0, 1)
+        # Apply this value across all RGB channels to ensure the color is grayscale
+        rep.randomizer.color(colors=gray_value)
+    return screen.node
 ```
 
 ### Randomizing textures
@@ -110,10 +131,10 @@ To further steer training of the object detection model in capturing features of
 import os
 
 def randomize_screen(screen, texture_files):
-		with screen:
-			# Let Replicator pick a random texture from list of .jpg-files
-			rep.randomizer.texture(textures=texture_files)
-		return screen.node
+    with screen:
+        # Let Replicator pick a random texture from list of .jpg-files
+        rep.randomizer.texture(textures=texture_files)
+    return screen.node
 
 # Define what folder to look for .jpg files in
 folder_path = 'C:/Users/eivho/source/repos/icicle-monitor/val2017/testing/'
@@ -132,6 +153,46 @@ with rep.trigger.on_frame(num_frames=2000, rt_subframes=50):
 We could instead generate textures with random shapes and colors. Either way, the resulting renders will look weird, but help the model training process weight features that are relevant for the icicles, not the background.
 
 These are rather unsofisticated approaches. More realistic results would be achieved by changing the [materials](https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials.html) of the actual walls of the house used as background. Omniverse has a large selection of available materials available in the NVIDIA Assets browser, allowing us to randomize a [much wider range of aspects](https://docs.omniverse.nvidia.com/extensions/latest/ext_replicator/randomizer_details.html) of the rendered results.
+
+### Creating realistic outdoor lighting conditions using sun studies
+In contrast to a controlled indoor environment, creating a robust object detection model intended for outdoor use needs training images with a wide range of realistic natural light. When generating synthetic images we can utilize an [extension that approximates real world sunlight](https://docs.omniverse.nvidia.com/extensions/latest/ext_sun-study.html) based on sun studies. The extension let's us set world location, date and time. We can also mix this with the Environment setting in Omniverse, allowing for a wide range of simulation of clouds, proper Koyaanisqatsi. As of March 2024 it is not easy to randomize these parameters in script, but this [is likely to change](https://forums.developer.nvidia.com/t/randomize-time-of-day-in-dynamic-sky/273833/9). In the mean time we can set the parameters, generate a few thousand images, change time of day, generate more images and so on.
+
+[![Sun study demo](https://img.youtube.com/vi/qvDXRqBxECo/0.jpg)](https://youtu.be/qvDXRqBxECo)
+
+### Testing model in simulated environment with NVIDIA Isaac Sim and Edge Impulse extension
+We can get useful information about model performance with minimal effort by testing it in a virtual environment. Install [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) and [Edge Impulse extension](https://github.com/edgeimpulse/edge-impulse-omniverse-ext).
+
+![](img/EI-ext-enable.png "Edge Impulse extension")
+
+Install Sun study extension in Isaac Sim to be able to vary light conditions while testing.
+
+![](img/Isaac-sunstudy.png "Sun study in Isaac Sim")
+
+Paste API key found under Edge Impulse Studio> Dashboard> Keys> Add new API key:
+
+![](img/EI-ext-api-key.png "Edge Impulse extension API key")
+
+To be able to classify any virtual camera capture we first need to build a version of the model that can run in a JavaScript environment. In Edge Impulse Studio, go to Deployment, find "WebAssembly" in the search box and hit Build. We don't need to keep the resulting .zip package, the extension will find and download it by itself.
+
+![](img/EI-webasm.png "Edge Impulse WebAssembly")
+
+Back in the Edge Impulse extension in Isaac, when we expand the "Classification" group, a message will tell us everything is ready: "Your model is ready! You can now run inference on the current scene".
+
+Before we test it we will make some accommodations in the viewport.
+Switch to "RTX - Interactive" to make sure the scene is rendered realistically. 
+Set viewport resolution to square 1:1 with either the same resolution as our intended device inference (120x120 pixels), or close (512x512 pixels).
+
+![](img/Isaac-resolution.png "Isaac Sim viewport resolution")
+
+Display Isaac bounding boxes by selecting "BoundingBox2DLoose" under the icon that resembles a robotic sensor, the hit "Show Window". Now we can compare the ground truth with model prediction.
+
+![](img/Isaac-sensor.png "Isaac Sim sensors")
+
+![](img/Isaac-EI-1.png "Isaac Sim model testing")
+
+![](img/Isaac-EI-2.png "Isaac Sim model testing")
+
+![](img/Isaac-EI-3.png "Isaac Sim model testing")
 
 ## Deployment to device and LoRaWAN
 ### Testing model on device using OpenMV
@@ -167,7 +228,7 @@ Next we will simplify things by merging an example Arduino sketch for transmitti
 
 ![](img/arduino-lora.png "Arduino transmitting inference results over LoRaWAN")
 
-In short we perform inference evary 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application. It is probably obvious that then binary payload is redundant, the presence of a message is enough
+In short we perform inference evary 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application. It is probably obvious that then binary payload is redundant, the presence of a message is enough, but this could be extended to transmit e.g. prediction confidence, number of clusters, battery level, temperature or light level.
 
 ```python
 if(bb_found) {
@@ -176,6 +237,7 @@ if(bb_found) {
     modem.beginPacket();
     modem.write((uint8_t)1); // This sends the binary value 0x01
     lora_err = modem.endPacket(true);
+}
 ```
 
 A few things to consider in the implementation:
@@ -189,7 +251,7 @@ The device should enter deep sleep mode and disable/put to sleep all periferals 
 
 ![](img/otii-icicle-profile.png "Otii Arc power profile")
 
-As we can see the highlighted section should be optimized for minimal power consumption. This is out of scope for this article, but provided are some examples for guidance: [snow monitor](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8#toc-power-profiling-16), [mail box sensor](https://community.element14.com/challenges-projects/project14/rf/b/blog/posts/got-mail-lorawan-mail-box-sensor).
+As we can see the highlighted section should be optimized for minimal power consumption. This is a complicated subject, especially on a [complex board such as the Arduino Portenta H7](https://github.com/arduino/ArduinoCore-mbed/issues/619) and out of scope for this article. Provided are some examples for general guidance: [snow monitor](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8#toc-power-profiling-16), [mail box sensor](https://community.element14.com/challenges-projects/project14/rf/b/blog/posts/got-mail-lorawan-mail-box-sensor).
 
 The project code runs inference on an image every 10 seconds. This is for demonstration purposes and should be much less frequent, like once per hour during daylight. Have a look at this project for an example of how to [remotely control inference interval](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8#toc-lora-application-14) via LoRaWAN downlink message. This could be further controlled automatically via an application that has access to an [API for daylight data](https://developer.yr.no/doc/GettingStarted/).
 
@@ -241,11 +303,10 @@ v3/icicle-monitor@ttn/devices/portenta-h7-icicle-00/up
 ```
 Observe the difference in the real uplink (first) and simulated uplink (last). In both we find "decoded_payload":{"detected":true}.
 
-TTS has a range of [integration options](https://www.thethingsindustries.com/docs/integrations/) for spesific platforms, or you could set up a [custom webhook using standard HTTP/REST](https://www.thethingsindustries.com/docs/integrations/webhooks/) mechanisms.
+TTS has a range of [integration options](https://www.thethingsindustries.com/docs/integrations/) for spesific platforms, or you could set up a [custom webhook using standard HTTP/REST](https://www.thethingsindustries.com/docs/integrations/webhooks/) mechanism.
 
 * Integration with dashboards
 * Sun studies
-* Power profiling
 * Basic Writer to pascal voc
 * Markers, false negatives
 * Compile time... 61736466
