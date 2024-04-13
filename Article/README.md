@@ -320,6 +320,14 @@ Since our synthetic training images are based on both individual and two differe
 
 Note that the final results include 5000 images from the [COCO 2017 dataset](https://cocodataset.org/#download). Adding this reduces F1 score a bit, but results in a model with significantly less overfitting, that shows almost no false positives when classifying random background scenes.
 
+If we look at results from model testing in Edge Impulse Studio at first glance the numbers are less than impressive.
+
+![](img/model-testing1.png "Model testing")
+
+However if we investigate individual samples where F1 score is less than 100%, we see that the model indeed has detected the icicles, but clustered differently than how the image was originally labeled. What we should look out for are samples that contain visible icicles where none were detected.
+
+In the end virtual and real-life testing tells us how well the model really performs.
+
 ### Testing model in simulated environment with NVIDIA Isaac Sim and Edge Impulse extension
 We can get useful information about model performance with minimal effort by testing it in a virtual environment. Install [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) and [Edge Impulse extension](https://github.com/edgeimpulse/edge-impulse-omniverse-ext).
 
