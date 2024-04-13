@@ -1,7 +1,11 @@
-# Rooftop Ice Buildup Detection Using Edge Impulse with Synthetic Data Created with NVIDIA Omniverse Replicator and Sun Studies
+# Rooftop ice buildup detection using Edge Impulse with synthetic data created with NVIDIA Omniverse Replicator and Sun Studies
+
+![](img/cover1.png "Synthetic training images")
 
 ## Intro
-This portable device monitors buildings and warns the responsible parties when potentially hazardous icicles are formed. In ideal conditions icicles can form at a rate of [more than 1 cm (0.39 in) per minute](https://en.wikipedia.org/wiki/Icicle). Each year, many people are injured or killed by these solid projectiles, leading responsible building owners to often close sidewalks in the spring to minimize risk. This project demonstrates how an extra set of digital eyes can notify property owners icicles are forming and need to be removed before they can cause harm.
+This portable device monitors buildings and warns the responsible parties when potentially hazardous icicles are formed. In ideal conditions icicles can form at a rate of [more than 1 cm (0.39 in) per minute](https://en.wikipedia.org/wiki/Icicle). Each year, many people are injured and killed by these solid projectiles, leading responsible building owners to often close sidewalks in the spring to minimize risk. This project demonstrates how an extra set of digital eyes can notify property owners icicles are forming and need to be removed before they can cause harm.
+
+![](img/IMG_8710.jpg "Downtown, photo: Avisa Nordland")
 
 ## Hardware used
 * [Arduino Portenta H7](https://docs.arduino.cc/hardware/portenta-h7/)
@@ -22,6 +26,8 @@ Project [Impulse](https://studio.edgeimpulse.com/public/332581/live) and [Github
 ## Working principle
 Icicle formation is detected using a neural network (NN) designed to identify objects in images from the onboard camera. The NN is trained and tested exclusively on synthesized images. The images are generated with realistic simulated lighting conditions. A small amount of real images are used to verify the model.
 
+![](img/20240413_215105_.jpg "Arduino Portenta H7")
+
 ## Challenges
 The main challenge of detecting forming icicles is the transparent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is incredibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
 
@@ -40,7 +46,7 @@ One of the most labor intensive aspects of building any machine learning model i
 NVIDIA Omniverse Code is an IDE that allows us to compose 3D scenes and to write simple Python code to capture images. Further, the extension Replicator is a toolkit that allows us to label the objects in the images and to simplify common domain randomization tasks, such as scattering objects between images. For an in-depth walkthrough on getting started with Omniverse and Replicator [see this article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data).
 
 ### Making a scene
-It's possible to create an empty scene in Omniverse and add content programmatically. However, composing initial objects by hand serves as a practical starting point. In this project a royalty free 3D model of a house was used as a basis.
+It's possible to create an empty scene in Omniverse and add content programmatically. However, composing initial objects by hand serves as a practical starting point. In this project [a royalty free 3D model of a house](https://www.cgtrader.com/free-3d-models/exterior/house/house-model-3d-dom-2) was used as a basis.
 
 ![](img/house.png "3D house model")
 
