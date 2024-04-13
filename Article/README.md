@@ -1,36 +1,34 @@
-# Rooftop ice buildup detection using Edge Impulse with synthetic data created with NVIDIA Omniverse Replicator and sun studies
+# Rooftop Ice Buildup Detection Using Edge Impulse with Synthetic Data Created with NVIDIA Omniverse Replicator and Sun Studies
 
 ## Intro
-This portable device monitors buildings and warns the responsible when potential hazardous icicles are formed. In ideal conditions icicles can form at a rate of [more than 1 cm (0.39 in) per minute](https://en.wikipedia.org/wiki/Icicle). As many people are injured and killed by these solid projectiles each year, responsible building owners often close sidewalks in the spring to minimize risk. This project demonstrates how an extra set of digital eyes can notify property owners icicles are forming and need to be removed before they can cause harm.
+This portable device monitors buildings and warns the responsible parties when potentially hazardous icicles are formed. In ideal conditions icicles can form at a rate of [more than 1 cm (0.39 in) per minute](https://en.wikipedia.org/wiki/Icicle). Each year, many people are injured or killed by these solid projectiles, leading responsible building owners to often close sidewalks in the spring to minimize risk. This project demonstrates how an extra set of digital eyes can notify property owners icicles are forming and need to be removed before they can cause harm.
 
-## Hardware used:
-* [Arduino Portena H7](https://docs.arduino.cc/hardware/portenta-h7/)
-* [Arduino Portena Vision Shield w/LoRa Connectivity](https://docs.arduino.cc/hardware/portenta-vision-shield/)
+## Hardware used
+* [Arduino Portenta H7](https://docs.arduino.cc/hardware/portenta-h7/)
+* [Arduino Portenta Vision Shield w/LoRa Connectivity](https://docs.arduino.cc/hardware/portenta-vision-shield/)
 * NVIDIA GeForce RTX
-* Formlabs Form 2 3D printer
 * [Otii Arc from Qoitech](https://www.qoitech.com/otii-arc-pro/)
 
-## Software used:
+## Software used
 * [Edge Impulse Studio](https://studio.edgeimpulse.com/studio)
 * [NVIDIA Omniverse Code](https://www.nvidia.com/en-us/omniverse/) with [Replicator](https://developer.nvidia.com/omniverse/replicator)
 * [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) with [Edge Impulse extension](https://github.com/edgeimpulse/edge-impulse-omniverse-ext)
 * [Visual Studio Code](https://code.visualstudio.com/)
 * [Blender](https://www.blender.org/)
-* [Autodesk Fusion 360](https://www.autodesk.no/products/fusion-360/)
 
 ## Code and machine learning repository
-Project [Impulse](https://studio.edgeimpulse.com/public/332581/latest) and [code repository](https://github.com/eivholt/icicle-monitor).
+Project [Impulse](https://studio.edgeimpulse.com/public/332581/live) and [Github code repository](https://github.com/eivholt/icicle-monitor).
 
 ## Working principle
-Forming icicles are detected using a neural network(NN) with an architecture aimed at detecting objects in images from the on-board camera. The NN is trained and tested exclusively on synthesized images. The images are generated with realistic simulated lighting conditions. A small amount of real images are used to verify the model.
+Icicle formation is detected using a neural network (NN) designed to identify objects in images from the onboard camera. The NN is trained and tested exclusively on synthesized images. The images are generated with realistic simulated lighting conditions. A small amount of real images are used to verify the model.
 
 ## Challenges
-The main challenge of detecting forming icicles is the transparent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is increadibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
+The main challenge of detecting forming icicles is the transparent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is incredibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
 
 ## Mobility
-A powerful platform combined with a high resolution camera with fish-eye lense would increase the ability to detect icicles. However, by deploying the object detection model to a small, power-efficient, but highly constrained device, options for device installation increase. Properly protected against moisture this device can be mounted outdoors on walls or poles facing the roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
+A powerful platform combined with a high resolution camera with fish-eye lens would increase the ability to detect icicles. However, by deploying the object detection model to a small, power-efficient, but highly constrained device, options for device installation increase. Properly protected against moisture this device can be mounted outdoors on walls or poles facing the roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
 
-## Object detection using neural networks
+## Object detection using neural network
 [FOMO (Faster Objects, More Objects)](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/object-detection/fomo-object-detection-for-constrained-devices) is a novel machine learning algorithm that allows for visual object detection on highly constrained devices through training of a neural network with a number of convolutional layers.
 
 ![](img/EILogo.svg "Edge Impulse")
@@ -39,7 +37,7 @@ A powerful platform combined with a high resolution camera with fish-eye lense w
 One of the most labor intensive aspects of building any machine learning model is gathering the training data and to label it. For an object detection model this requires taking hundreds or thousands of images of the objects to detect, drawing rectangles around them and choosing the correct label for each class. Recently generating pre-labeled images has become feasible and has proven great results. This is referred to as synthetic data generation with domain randomization. In this project a model will be trained exclusively on synthetic data and we will see how it can detect the real life counterparts.
 
 ### Domain randomization using NVIDIA Omniverse Replicator
-NVIDIA Omniverse Code is an IDE that allows us to compose 3D scenes and to write simple Python code to capture images. Further, the extention Replicator is a toolkit that allows us to label the objects in the images and to simplify common domain randomization tasks, such as scattering objects between images. For an in-depth walkthrough on getting started with Omniverse and Replicator [see this article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data).
+NVIDIA Omniverse Code is an IDE that allows us to compose 3D scenes and to write simple Python code to capture images. Further, the extension Replicator is a toolkit that allows us to label the objects in the images and to simplify common domain randomization tasks, such as scattering objects between images. For an in-depth walkthrough on getting started with Omniverse and Replicator [see this article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data).
 
 ### Making a scene
 It's possible to create an empty scene in Omniverse and add content programmatically. However, composing initial objects by hand serves as a practical starting point. In this project a royalty free 3D model of a house was used as a basis.
@@ -53,7 +51,7 @@ To represent the icicle a high quality model pack was purchased at [Turbo Squid]
 
 ![](img/turbo-squid-icicle.png "3D icicle models purchased at Turbo Squid")
 
-To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaboarting within 3D-worlds, it is not yet dominant in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
+To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaborting within 3D-worlds, it is not yet dominant in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
 
 Blender change origin cheat sheet:
 + Select vertex on model (Edit Mode), Shift+S-> Cursor to selected
@@ -250,7 +248,7 @@ with rep.trigger.on_frame(num_frames=2000, rt_subframes=50):
 
 We could instead generate textures with random shapes and colors. Either way, the resulting renders will look weird, but help the model training process weight features that are relevant for the icicles, not the background.
 
-These are rather unsofisticated approaches. More realistic results would be achieved by changing the [materials](https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials.html) of the actual walls of the house used as background. Omniverse has a large selection of available materials available in the NVIDIA Assets browser, allowing us to randomize a [much wider range of aspects](https://docs.omniverse.nvidia.com/extensions/latest/ext_replicator/randomizer_details.html) of the rendered results.
+These are rather unsophisticated approaches. More realistic results would be achieved by changing the [materials](https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials.html) of the actual walls of the house used as background. Omniverse has a large selection of available materials available in the NVIDIA Assets browser, allowing us to randomize a [much wider range of aspects](https://docs.omniverse.nvidia.com/extensions/latest/ext_replicator/randomizer_details.html) of the rendered results.
 
 ### Creating realistic outdoor lighting conditions using sun studies
 In contrast to a controlled indoor environment, creating a robust object detection model intended for outdoor use needs training images with a wide range of realistic natural light. When generating synthetic images we can utilize an [extension that approximates real world sunlight](https://docs.omniverse.nvidia.com/extensions/latest/ext_sun-study.html) based on sun studies. 
@@ -378,7 +376,7 @@ Start by selecting Arduino library as Deployment target.
 
 ![](img/EI-arduino-library.png "Deploy model as Arduino compatible library")
 
-Once built and downloaded, open Arduino IDE, go to **Sketch> Include Library> Add .zip Library ...** and locate the downloaded library. Next go to **File> Examples> [name of project]_inferencing> portenta_h7> portenat_h7_camera** to open a generic sketch template using our model. To test the model continuously and print the results to console this sketch is ready to go. The code might appear daunting, but we really only need to focus on the loop() function.
+Once built and downloaded, open Arduino IDE, go to **Sketch> Include Library> Add .zip Library ...** and locate the downloaded library. Next go to **File> Examples> [name of project]_inferencing> portenta_h7> portenta_h7_camera** to open a generic sketch template using our model. To test the model continuously and print the results to console this sketch is ready to go. The code might appear daunting, but we really only need to focus on the loop() function.
 
 ![](img/EI-arduino-library-example.png "Arduino compatible library example sketch")
 
@@ -410,7 +408,7 @@ if(bb_found) {
 ```
 
 A few things to consider in the implementation:
-The device should enter deep sleep mode and disable/put to sleep all periferals between object detection. Default operation of the Portenta H7 with the Vision shield consumes a lot of energy and will drain battery quickly. To find out how much energy is consumed we can use a device such as the [Otii Arc from Qoitech](https://www.qoitech.com/otii-arc-pro/). Hook up positive power supply to VIN, negative to GND. Since VIN bypasses the Portenta power regulator we should provide 5V, however in my setup the Otii Arc is limited to 4.55V. Luckily it seems to be sufficient and we can take some measurements. By connecting the Otii Arc pin RX to the Portenta pin D14/PA9/UART1 TX, in code we can write debug messages to Serial1. This is increadibly helpful in establishing what power consumption is associated with what part of the code.
+The device should enter deep sleep mode and disable/put to sleep all periferals between object detection. Default operation of the Portenta H7 with the Vision shield consumes a lot of energy and will drain battery quickly. To find out how much energy is consumed we can use a device such as the [Otii Arc from Qoitech](https://www.qoitech.com/otii-arc-pro/). Hook up positive power supply to VIN, negative to GND. Since VIN bypasses the Portenta power regulator we should provide 5V, however in my setup the Otii Arc is limited to 4.55V. Luckily it seems to be sufficient and we can take some measurements. By connecting the Otii Arc pin RX to the Portenta pin D14/PA9/UART1 TX, in code we can write debug messages to Serial1. This is incredibly helpful in establishing what power consumption is associated with what part of the code.
 
 ![](img/portenta_h7_power.png "Arduino Portenta H7 power specs")
 
@@ -472,11 +470,11 @@ v3/icicle-monitor@ttn/devices/portenta-h7-icicle-00/up
 ```
 Observe the difference in the real uplink (first) and simulated uplink (last). In both we find "decoded_payload":{"detected":true}.
 
-TTS has a range of [integration options](https://www.thethingsindustries.com/docs/integrations/) for spesific platforms, or you could set up a [custom webhook using standard HTTP/REST](https://www.thethingsindustries.com/docs/integrations/webhooks/) mechanism.
+TTS has a range of [integration options](https://www.thethingsindustries.com/docs/integrations/) for specific platforms, or you could set up a [custom webhook using standard HTTP/REST](https://www.thethingsindustries.com/docs/integrations/webhooks/) mechanism.
 
 ## Limitations
 ### Weatherproofing
-The device enclosure made for this proof-of-concept is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
+The device enclosure made for this proof-of-concept is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticeable degradation in winter conditions (to at least -15 degrees Celcius).
 
 ### Obscured view
 The project has no safe-guard against false negatives. The device will not report if it's view is blocked. This could be resolved by placing static markers on both sides of an area to monitor and included in synthetic training data. Absence of at least one marker could trigger a notification that the view is obscured.
@@ -505,7 +503,7 @@ The training images could benefit from simulating snow with particle effects in 
 [![Snow simulation](https://img.youtube.com/vi/9H1gRQ6S7gg/0.jpg)](https://youtu.be/9H1gRQ6S7gg)
 
 ### Grayscale
-To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portena H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this will not affect the results.
+To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portenta H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this will not affect the results.
 
 ![](img/grayscale1.png "Grayscale")
 
