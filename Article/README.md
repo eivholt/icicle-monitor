@@ -29,7 +29,7 @@ Icicle formation is detected using a neural network (NN) designed to identify ob
 ![](img/20240413_215105_.jpg "Arduino Portenta H7")
 
 ## Challenges
-The main challenge of detecting forming icicles is the transparent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is incredibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
+The main challenge of detecting forming icicles is the translucent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is incredibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
 
 ## Mobility
 A powerful platform combined with a high resolution camera with fish-eye lens would increase the ability to detect icicles. However, by deploying the object detection model to a small, power-efficient, but highly constrained device, options for device installation increase. Properly protected against moisture this device can be mounted outdoors on walls or poles facing the roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
@@ -50,14 +50,12 @@ It's possible to create an empty scene in Omniverse and add content programmatic
 
 ![](img/house.png "3D house model")
 
-### Icicles
-
 ### Icicle models
 To represent the icicle a high quality model pack was purchased at [Turbo Squid](https://www.turbosquid.com/3d-models/). 
 
 ![](img/turbo-squid-icicle.png "3D icicle models purchased at Turbo Squid")
 
-To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaborting within 3D-worlds, it is not yet dominant in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
+To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaborting within 3D-worlds, it is not yet commonly supported in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
 
 Blender change origin cheat sheet:
 + Select vertex on model (Edit Mode), Shift+S-> Cursor to selected
@@ -73,7 +71,7 @@ Tip for export:
 ![](img/Blender_select_vertex.png "3D icicle models exported from Blender")
 
 ### Setting semantic metadata on objects
-To be able to produce images for training and include labels we can use a feature of Replicator toolbox found under menu Replicator->Semantics Schema Editor.
+To be able to produce images for training and include labels we can use a feature of Replicator toolbox found under menu Replicator> Semantics Schema Editor.
 
 ![](img/semantic-editor.png "Semantics Schema Editor")
 
@@ -89,7 +87,7 @@ To keep the items generated in our script separate from the manually created con
 with rep.new_layer():
 ```
 
-Next we specify that we want to use ray tracing as our image output. We create a camera and hard code the position. We will point it to our icicles for each render later. Then we use our previously defined semantics data to get references to the icicles for easier manipulation. We also define references to a plane on which we want to scatter the icicles. Lastly we define our render output by selecting the camera and setting the desired resolution. Due to an issue in Omniverse where artifacts are produces at certain resolutions, e.g. 120x120 pixels, we set the output resolution at 128x128 pixels. Edge Impulse Studio will take care of scaling the images to the desired size should we use images of different size than the configured model size.
+Next we specify that we want to use ray-tracing as our image output. We create a camera and hard code the position. We will point it to our icicles for each render later. Then we use our previously defined semantics data to get references to the icicles for easier manipulation. We also define references to a plane on which we want to scatter the icicles. Lastly we define our render output by selecting the camera and setting the desired resolution. Due to an issue in Omniverse where artifacts are produces at certain resolutions, e.g. 120x120 pixels, we set the output resolution at 128x128 pixels. Edge Impulse Studio will take care of scaling the images to the desired size should we use images of different size than the configured model size.
 
 ```python
 rep.settings.set_render_pathtraced(samples_per_pixel=64)
@@ -131,7 +129,7 @@ writer.attach([render_product])
 asyncio.ensure_future(rep.orchestrator.step_async())
 ```
 
-rgb indicates that we want to save images to disk as png-files. Note that labels are created setting *bounding_box_2d_loose*. This is used in this case instead of *bounding_box_2d_tight* as the latter in some cases would not include the tip of the icicles in the resulting bounding box. It also creates labels from previously defined semantics. The code ends with running a single iteration of the process in Omniverse Code, so we can preview the results.
+*rgb* indicates that we want to save images to disk as png-files. Note that labels are created setting *bounding_box_2d_loose*. This is used in this case instead of *bounding_box_2d_tight* as the latter in some cases would not include the tip of the icicles in the resulting bounding box. It also creates labels from previously defined semantics. The code ends with running a single iteration of the process in Omniverse Code, so we can preview the results.
 
 The bounding boxes can be visualized by clicking the sensor widget, checking "BoundingBox2DLoose" and finally "Show Window".
 
@@ -168,7 +166,7 @@ return camera.node
 We can define the methods in any order we like, but in *rep.trigger.on_frame* it is crucial that the icicles are placed before pointing the camera.
 
 ### Running domain randomization
-With a basic randomization program in place, we could run it from the embedded script editor (Window> Script Editor), but more robust Python language support can be achieved by developing in Visual Studio Code instead. To connect VS Code with Omniverse we can use the Visual Studio Code extension [Embedded VS Code for NVIDIA Omniverse](https://marketplace.visualstudio.com/items?itemName=Toni-SM.embedded-vscode-for-nvidia-omniverse). See [extension repo](https://github.com/Toni-SM/semu.misc.vscode) for setup. When ready to run go to Replicator>Start and check progress in the defined output folder.
+With a basic randomization program in place, we could run it from the embedded script editor (Window> Script Editor), but more robust Python language support can be achieved by developing in Visual Studio Code instead. To connect VS Code with Omniverse we can use the Visual Studio Code extension [Embedded VS Code for NVIDIA Omniverse](https://marketplace.visualstudio.com/items?itemName=Toni-SM.embedded-vscode-for-nvidia-omniverse). See [extension repo](https://github.com/Toni-SM/semu.misc.vscode) for setup. When ready to run go to Replicator> Start and check progress in the defined output folder.
 
 ![](img/output1.png "Produced images")
 
@@ -480,7 +478,7 @@ TTS has a range of [integration options](https://www.thethingsindustries.com/doc
 
 ## Limitations
 ### Weatherproofing
-The device enclosure made for this proof-of-concept is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticeable degradation in winter conditions (to at least -15 degrees Celcius).
+For permanent outdoor installation the device requires a properly sealed enclosure. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticeable degradation in winter conditions (to at least -15 degrees Celcius).
 
 ### Obscured view
 The project has no safe-guard against false negatives. The device will not report if it's view is blocked. This could be resolved by placing static markers on both sides of an area to monitor and included in synthetic training data. Absence of at least one marker could trigger a notification that the view is obscured.
@@ -509,7 +507,7 @@ The training images could benefit from simulating snow with particle effects in 
 [![Snow simulation](https://img.youtube.com/vi/9H1gRQ6S7gg/0.jpg)](https://youtu.be/9H1gRQ6S7gg)
 
 ### Grayscale
-To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portenta H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this will not affect the results.
+To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portenta H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this does not affect the results.
 
 ![](img/grayscale1.png "Grayscale")
 
