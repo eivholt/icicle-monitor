@@ -77,9 +77,114 @@ It's possible to create an empty scene in Omniverse and add content programmatic
 
 ![](img/house.png "3D house model")
 
-
-
 ### Icicles
+
+### Icicle models
+To represent the icicle a high quality model pack was purchased at [Turbo Squid](https://www.turbosquid.com/3d-models/). To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaboarting within 3D-worlds, it is not yet dominant in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
+
+![](img/turbo-squid-icicle.png "3D icicle models purchased at Turbo Squid")
+
+![](img/Blender_select_vertex.png "3D icicle models exported from Blender")
+
+### Setting semantic metadata on objects
+To be able to produce images for training and include labels we can use a feature of Replicator toolbox found under menu Replicator->Semantics Schema Editor.
+
+![](img/semantic-editor.png "Semantics Schema Editor")
+
+Here we can select each top node representing an item for object detection and adding a key-value pair. Choosing "class" as Semantic Type and "ice" as Semantic Data enables us to export this string as label later.
+
+### Creating a program for domain randomization
+With a basic 3D stage created and objects of interest labeled we can continue creating a program that will make sure we produce images with slight variations. Our program can be named anything, ending in .py and preferably placed close to the stage USD-file. The following is a description of such a program [replicator_init.py](https://github.com/eivholt/icicle-monitor/blob/main/omniverse-replicator/replicator_init.py):
+
+
+To keep the items generated in our script separate from the manually created content we start by creating a new layer in the 3D stage:
+
+```python
+with rep.new_layer():
+```
+
+Next we specify that we want to use ray tracing as our image output. We create a camera and hard code the position. We will point it to our icicles for each render later. Then we use our previously defined semantics data to get references to the icicles for easier manipulation. We also define references to a plane on which we want to scatter the icicles. Lastly we define our render output by selecting the camera and setting the desired resolution. Due to an issue in Omniverse where artifacts are produces at certain resolutions, e.g. 120x120 pixels, we set the output resolution at 128x128 pixels. Edge Impulse Studio will take care of scaling the images to the desired size should we use images of different size than the configured model size.
+
+```python
+rep.settings.set_render_pathtraced(samples_per_pixel=64)
+cameraPlane = rep.get.prims(path_pattern='/World/CameraPlane')
+icePlane = rep.get.prims(path_pattern='/World/IcePlane')
+icicles = rep.get.prims(semantics=[("class", "ice")])
+
+camera = rep.create.camera(position=(0, 0, 0))
+render_product = rep.create.render_product(camera, (128, 128))
+```
+
+Due to the asynchronous nature of Replicator we need to define our randomization logic as call-back methods by first registering them in the following fashion:
+
+```python
+rep.randomizer.register(randomize_camera)
+rep.randomizer.register(scatter_ice)
+```
+
+Before defining the logic of the randomization methods we define what will happen during each render:
+
+```python
+with rep.trigger.on_frame(num_frames=10000, rt_subframes=50):
+    rep.randomizer.scatter_ice(icicles)
+    rep.randomizer.randomize_camera(icicles)
+```
+
+The parameter *num_frames* specifies the desired number of renders. The *rt_subframes* parameter allows the rendering process to advance a set number of frames before the result is captured and saved to disk. A higher setting enhances complex ray tracing effects like reflections and translucency by giving them more time to interact across surfaces, though it increases rendering time. Each randomization routine is invoked with the option to include specific parameters.
+
+To save each image and its corresponding semantic data, we utilize a designated API. While customizing the writer was considered, attempts to do so using Replicator version 1.9.8 on Windows led to errors. Therefore, we are employing the "BasicWriter" and will develop an independent script to generate a label format that is compatible with the Edge Impulse.
+
+```python
+writer = rep.WriterRegistry.get("BasicWriter")
+writer.initialize(
+    output_dir="[set output]",
+    rgb=True,
+    bounding_box_2d_loose=True)
+
+writer.attach([render_product])
+asyncio.ensure_future(rep.orchestrator.step_async())
+```
+
+rgb indicates that we want to save images to disk as png-files. Note that labels are created setting *bounding_box_2d_loose*. This is used in this case instead of *bounding_box_2d_tight* as the latter in some cases would not include the tip of the icicles in the resulting bounding box. It also creates labels from previously defined semantics. The code ends with running a single iteration of the process in Omniverse Code, so we can preview the results.
+
+The bounding boxes can be visualized by clicking the sensor widget, checking "BoundingBox2DLoose" and finally "Show Window".
+
+![](img/omniverse-bb.png "Omniverse bounding box")
+
+Now we can implement the randomization logic. First a method that flips and scatters the icicles on a defined plane.
+
+```python
+def scatter_ice(icicles):
+with icicles:
+    carb.log_info(f'Scatter icicle {icicles}')
+    ice_rotation = random.choice(
+        [
+            (-90, 90, 0),
+            (-90, -90, 0),
+        ]
+    )
+    rep.modify.pose(rotation=ice_rotation)
+    rep.randomizer.scatter_2d(surface_prims=icePlane, check_for_collisions=True)
+return icicles.node
+```
+
+Next a method that randomly places the camera on an other defined plane and makes sure the camera is pointing at the group of icicles and randomizes focus.
+
+```python
+def randomize_camera(targets):
+with camera:
+    rep.randomizer.scatter_2d(surface_prims=cameraPlane)
+    rep.modify.pose(look_at=targets)
+    rep.modify.attribute("focalLength", rep.distribution.uniform(10.0, 40.0))
+return camera.node
+```
+
+We can define the methods in any order we like, but in *rep.trigger.on_frame* it is crucial that the icicles are placed before pointing the camera.
+
+### Running domain randomization
+With a basic randomization program in place, we could run it from the embedded script editor (Window> Script Editor), but more robust Python language support can be achieved by developing in Visual Studio Code instead. To connect VS Code with Omniverse we can use the Visual Studio Code extension [Embedded VS Code for NVIDIA Omniverse](https://marketplace.visualstudio.com/items?itemName=Toni-SM.embedded-vscode-for-nvidia-omniverse). See [extension repo](https://github.com/Toni-SM/semu.misc.vscode) for setup. When ready to run go to Replicator>Start and check progress in the defined output folder.
+
+![](img/output1.png "Produced images")
 
 ### Randomizing colors
 The surface behind the icicles may vary greatly, both in color and texture. Using Replicator randomizing the color of an objects material is easy.
@@ -111,6 +216,10 @@ with rep.trigger.on_frame(num_frames=2000, rt_subframes=50):  # rt_subframes=50
     rep.randomizer.randomize_screen(screen)
 ```
 
+![](img/random_color.png "Random background color")
+
+![](img/output2.png "Random background color")
+
 Now each image will have a background with random (deterministic, same starting seed) RGB color. Replicator takes care of creating a material with a shader for us. As you might remember, in an effort to reduce RAM usage our neural network reduces RGB color channels to grayscale. In this project we could simplify the color randomization to only pick grayscale colors. The example has been included as it would benefit in projects where color information is not reduced. To only randomize in grayscale, we could change the code in the randomization function to use the same value for R, G and B as follows:
 
 ```python
@@ -123,9 +232,10 @@ def randomize_screen(screen):
     return screen.node
 ```
 
+![](img/random_grayscale.png "Random background grayscale")
+
 ### Randomizing textures
 To further steer training of the object detection model in capturing features of the desired class, the icicles, and not features that appear due to short commings in the domain randomization, we can create images with the icicles in front of a large variety of background images. A simple way of achieving this is to use a large dataset of random images and randomly assigning one of them to a background plane for each image generated.
-
 
 ```python
 import os
@@ -150,14 +260,41 @@ with rep.trigger.on_frame(num_frames=2000, rt_subframes=50):
     rep.randomizer.randomize_screen(screen, texture_files)
 ```
 
+![](img/random_texture.png "Random background texture")
+
+![](img/random_texture_viewport.png "Random background texture, camera perspective")
+
+![](img/output3.png "Random background texture")
+
 We could instead generate textures with random shapes and colors. Either way, the resulting renders will look weird, but help the model training process weight features that are relevant for the icicles, not the background.
 
 These are rather unsofisticated approaches. More realistic results would be achieved by changing the [materials](https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials.html) of the actual walls of the house used as background. Omniverse has a large selection of available materials available in the NVIDIA Assets browser, allowing us to randomize a [much wider range of aspects](https://docs.omniverse.nvidia.com/extensions/latest/ext_replicator/randomizer_details.html) of the rendered results.
 
 ### Creating realistic outdoor lighting conditions using sun studies
-In contrast to a controlled indoor environment, creating a robust object detection model intended for outdoor use needs training images with a wide range of realistic natural light. When generating synthetic images we can utilize an [extension that approximates real world sunlight](https://docs.omniverse.nvidia.com/extensions/latest/ext_sun-study.html) based on sun studies. The extension let's us set world location, date and time. We can also mix this with the Environment setting in Omniverse, allowing for a wide range of simulation of clouds, proper Koyaanisqatsi. As of March 2024 it is not easy to randomize these parameters in script, but this [is likely to change](https://forums.developer.nvidia.com/t/randomize-time-of-day-in-dynamic-sky/273833/9). In the mean time we can set the parameters, generate a few thousand images, change time of day, generate more images and so on.
+In contrast to a controlled indoor environment, creating a robust object detection model intended for outdoor use needs training images with a wide range of realistic natural light. When generating synthetic images we can utilize an [extension that approximates real world sunlight](https://docs.omniverse.nvidia.com/extensions/latest/ext_sun-study.html) based on sun studies. The extension let's us set world location, date and time. We can also mix this with the Environment setting in Omniverse, allowing for a wide range of simulation of clouds, proper [Koyaanisqatsi](https://www.youtube.com/watch?v=tDW-1JIa2gI). As of March 2024 it is not easy to randomize these parameters in script, but this [is likely to change](https://forums.developer.nvidia.com/t/randomize-time-of-day-in-dynamic-sky/273833/9). In the mean time we can set the parameters, generate a few thousand images, change time of day, generate more images and so on.
 
 [![Sun study demo](https://img.youtube.com/vi/qvDXRqBxECo/0.jpg)](https://youtu.be/qvDXRqBxECo)
+
+![](img/output5.png "Sun study")
+
+![](img/output4.png "Sun study")
+
+![](img/output6.png "Sun study")
+
+### Creating label file for Edge Impulse Studio
+
+
+### Uploading images and labels using CLI edge-impulse-uploader
+Since we have generated both synthetic images and labels, we can use the CLI tool from Edge Impulse to efficiently upload both. Use
+
+edge-impulse-uploader --category split --directory [folder]
+
+to connect to account and project and upload image files and labels in bounding_boxes.labels. To switch project first do
+
+edge-impulse-uploader --clean
+
+At any time we can find "Perform train/test split" under "Danger zone" in project dashboard.
+
 
 ### Testing model in simulated environment with NVIDIA Isaac Sim and Edge Impulse extension
 We can get useful information about model performance with minimal effort by testing it in a virtual environment. Install [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) and [Edge Impulse extension](https://github.com/edgeimpulse/edge-impulse-omniverse-ext).
