@@ -30,37 +30,6 @@ The main challenge of detecting forming icicles is the transparent nature of ice
 ## Mobility
 A powerful platform combined with a high resolution camera with fish-eye lense would increase the ability to detect icicles. However, by deploying the object detection model to a small, power-efficient, but highly constrained device, options for device installation increase. Properly protected against moisture this device can be mounted outdoors on walls or poles facing the roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
 
-## Limitations
-### Weatherproofing
-The device enclosure made for this proof-of-concept is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
-
-### Obscured view
-The project has no safe-guard against false negatives. The device will not report if it's view is blocked. This could be resolved by placing static markers on both sides of an area to monitor and included in synthetic training data. Absence of at least one marker could trigger a notification that the view is obscured.
-
-![](img/marker.png "Markers to avoid false negatives")
-
-### Object scale
-Due to optimization techniques in Faster Objects - More Objects (FoMo) determining relative sizes of the icicles is not feasible. As even icicles with small mass can be harmful at moderate elevation this is not a crucial feature.
-
-![](img/object-scale.png "Object scale")
-
-### Exact number of icicles
-The object detection model has not been trained to give an exact number of icicles in view. This has no practical implication other than the model verification results appearing worse than practical performance.
-
-![](img/grouping.png "Icicle grouping")
-
-### Non-vertical icicles
-Icicles can appear bent or angled either due to wind or more commonly due to ice and snow masses slowly dropping over roof edges. The dataset generated in this project does not cover this, but it would not take a lot of effort to extend the domain randomization to rotate or warp the icicles.
-
-![](img/AULSSON_EBBA.png "AULSSON_EBBA")
-
-![](img/Martin-Cathrae.png "Martin Cathrae")
-
-### Grayscale
-To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portena H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this will not affect the results.
-
-![](img/grayscale1.png "Grayscale")
-
 ## Object detection using neural networks
 [FOMO (Faster Objects, More Objects)](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/object-detection/fomo-object-detection-for-constrained-devices) is a novel machine learning algorithm that allows for visual object detection on highly constrained devices through training of a neural network with a number of convolutional layers.
 
@@ -80,9 +49,22 @@ It's possible to create an empty scene in Omniverse and add content programmatic
 ### Icicles
 
 ### Icicle models
-To represent the icicle a high quality model pack was purchased at [Turbo Squid](https://www.turbosquid.com/3d-models/). To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaboarting within 3D-worlds, it is not yet dominant in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
+To represent the icicle a high quality model pack was purchased at [Turbo Squid](https://www.turbosquid.com/3d-models/). 
 
 ![](img/turbo-squid-icicle.png "3D icicle models purchased at Turbo Squid")
+
+To be able to import the models into Omniverse and Isaac Sim all models have to be converted to [OpenUSD-format](https://developer.nvidia.com/usd). While USD is a great emerging standard for describing, composing, simulating and collaboarting within 3D-worlds, it is not yet dominant in asset marketplaces. [This article](https://docs.edgeimpulse.com/experts/featured-machine-learning-projects/surgery-inventory-synthetic-data) outlines considerations when performing conversion using Blender to USD. Note that it is advisable to export each individual model and to choose a suitable origin/pivot point.
+
+Blender change origin cheat sheet:
++ Select vertex on model (Edit Mode), Shift+S-> Cursor to selected
++ (Object Mode) Select Hierarchy, Object>Set Origin\Origin to 3D Cursor
++ (Object Mode) Shift+S\Cursor to World Origin
+
+Tip for export:
++ Selection only
++ Convert Orientation:
+    + Forward Axis: X
+    + Up Axis: Y
 
 ![](img/Blender_select_vertex.png "3D icicle models exported from Blender")
 
@@ -271,7 +253,11 @@ We could instead generate textures with random shapes and colors. Either way, th
 These are rather unsofisticated approaches. More realistic results would be achieved by changing the [materials](https://docs.omniverse.nvidia.com/materials-and-rendering/latest/materials.html) of the actual walls of the house used as background. Omniverse has a large selection of available materials available in the NVIDIA Assets browser, allowing us to randomize a [much wider range of aspects](https://docs.omniverse.nvidia.com/extensions/latest/ext_replicator/randomizer_details.html) of the rendered results.
 
 ### Creating realistic outdoor lighting conditions using sun studies
-In contrast to a controlled indoor environment, creating a robust object detection model intended for outdoor use needs training images with a wide range of realistic natural light. When generating synthetic images we can utilize an [extension that approximates real world sunlight](https://docs.omniverse.nvidia.com/extensions/latest/ext_sun-study.html) based on sun studies. The extension let's us set world location, date and time. We can also mix this with the Environment setting in Omniverse, allowing for a wide range of simulation of clouds, proper [Koyaanisqatsi](https://www.youtube.com/watch?v=tDW-1JIa2gI). As of March 2024 it is not easy to randomize these parameters in script, but this [is likely to change](https://forums.developer.nvidia.com/t/randomize-time-of-day-in-dynamic-sky/273833/9). In the mean time we can set the parameters, generate a few thousand images, change time of day, generate more images and so on.
+In contrast to a controlled indoor environment, creating a robust object detection model intended for outdoor use needs training images with a wide range of realistic natural light. When generating synthetic images we can utilize an [extension that approximates real world sunlight](https://docs.omniverse.nvidia.com/extensions/latest/ext_sun-study.html) based on sun studies. 
+
+[![Sun study extension](https://img.youtube.com/vi/MRD-oAxaV8w/0.jpg)](https://youtu.be/MRD-oAxaV8w)
+
+The extension let's us set world location, date and time. We can also mix this with the Environment setting in Omniverse, allowing for a wide range of simulation of clouds, proper [Koyaanisqatsi](https://www.youtube.com/watch?v=tDW-1JIa2gI). As of March 2024 it is not easy to randomize these parameters in script, but this [is likely to change](https://forums.developer.nvidia.com/t/randomize-time-of-day-in-dynamic-sky/273833/9). In the mean time we can set the parameters, generate a few thousand images, change time of day, generate more images and so on.
 
 [![Sun study demo](https://img.youtube.com/vi/qvDXRqBxECo/0.jpg)](https://youtu.be/qvDXRqBxECo)
 
@@ -282,19 +268,57 @@ In contrast to a controlled indoor environment, creating a robust object detecti
 ![](img/output6.png "Sun study")
 
 ### Creating label file for Edge Impulse Studio
+Edge Impulse Studio supports a wide range of image labeling formats for object detection. The output from Replicator's BasicWriter needs to be transformed so it can be uploaded either through the web interface or via [web-API](https://docs.edgeimpulse.com/reference/ingestion-api#ingestion-api).
 
+Provided is a simple Python program, [basic_writer_to_pascal_voc.py](https://github.com/eivholt/icicle-monitor/blob/main/scripts/basic_writer_to_pascal_voc.py). [Documentation on EI label formats](https://docs.edgeimpulse.com/docs/edge-impulse-studio/data-acquisition/uploader#understanding-image-dataset-annotation-formats). Run the program from shell with
+``` 
+python basic_writer_to_pascal_voc.py <input_folder>
+```
+or debug from Visual Studio Code by setting input folder in launch.json like this: 
+```
+"args": ["../out"]
+```
+
+This will create a file bounding_boxes.labels that contains all labels and bounding boxes per image.
+
+## Creating an object detection project in Edge Impulse Studio
+Look at the [provided object detection Edge Impulse project](https://studio.edgeimpulse.com/public/332581/live) or [follow a guide to create a new FOMO project](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/object-detection/fomo-object-detection-for-constrained-devices#how-to-get-started).
 
 ### Uploading images and labels using CLI edge-impulse-uploader
-Since we have generated both synthetic images and labels, we can use the CLI tool from Edge Impulse to efficiently upload both. Use
+Since we have generated both synthetic images and labels, we can use the [CLI tool from Edge Impulse](https://docs.edgeimpulse.com/docs/tools/edge-impulse-cli/cli-uploader) to efficiently upload both. Use
 
+```
 edge-impulse-uploader --category split --directory [folder]
+```
 
 to connect to account and project and upload image files and labels in bounding_boxes.labels. To switch project first do
 
+```
 edge-impulse-uploader --clean
+```
 
-At any time we can find "Perform train/test split" under "Danger zone" in project dashboard.
+At any time we can find "Perform train/test split" under "Danger zone" in project dashboard to distribute images between training/testing in a 80/20 split.
 
+### Model training and performance
+Since our synthetic training images are based on both individual and two different sized clusters of icicles, we can't trust the model performance numbers too much. Greater F1 scores are better, but we will never achieve 100%. Still, we can upload increasing numbers of labeled images and observe how performance numbers increase.
+
+2000 images:
+
+![](img/2000-images.png "2000 images")
+
+6000 images:
+
+![](img/6000-images-120cycles.png "6000 images")
+
+14000 images:
+
+![](img/14000-images-120cycles_no-opt.png "14000 images")
+
+37000 images:
+
+![](img/26000-images-light-5000coco-120cycles_no-opt.png "26000 images")
+
+Note that the final results include 5000 images from the [COCO 2017 dataset](https://cocodataset.org/#download). Adding this reduces F1 score a bit, but results in a model with significantly less overfitting, that shows almost no false positives when classifying random background scenes.
 
 ### Testing model in simulated environment with NVIDIA Isaac Sim and Edge Impulse extension
 We can get useful information about model performance with minimal effort by testing it in a virtual environment. Install [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) and [Edge Impulse extension](https://github.com/edgeimpulse/edge-impulse-omniverse-ext).
@@ -365,7 +389,7 @@ Next we will simplify things by merging an example Arduino sketch for transmitti
 
 ![](img/arduino-lora.png "Arduino transmitting inference results over LoRaWAN")
 
-In short we perform inference evary 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application. It is probably obvious that then binary payload is redundant, the presence of a message is enough, but this could be extended to transmit e.g. prediction confidence, number of clusters, battery level, temperature or light level.
+In short we perform inference every 10 seconds. If any icicles are detected we simply transmit a binary 1 to the The Things Stack application. It is probably obvious that the binary payload is redundant, the presence of a message is enough, but this could be extended to transmit e.g. prediction confidence, number of clusters, battery level, temperature or light level.
 
 ```python
 if(bb_found) {
@@ -442,45 +466,40 @@ Observe the difference in the real uplink (first) and simulated uplink (last). I
 
 TTS has a range of [integration options](https://www.thethingsindustries.com/docs/integrations/) for spesific platforms, or you could set up a [custom webhook using standard HTTP/REST](https://www.thethingsindustries.com/docs/integrations/webhooks/) mechanism.
 
-* Integration with dashboards
-* Sun studies
-* Basic Writer to pascal voc
-* Markers, false negatives
-* Compile time... 61736466
+## Limitations
+### Weatherproofing
+The device enclosure made for this proof-of-concept is not properly sealed for permanent outdoor installation. The camera is mounted on the shield PCB and will need some engineering to be able to see through the enclosure while remaining water tight. For inspiration on how to create weather-proof enclosures that allow sensors and antennas outside access, [see this project](https://www.hackster.io/eivholt/low-power-snow-depth-sensor-using-lora-e5-b8e7b8) on friction fitting and use of rubber washers. The referenced project also proves that battery operated sensors can work with no noticible degradation in winter conditions (to at least -15 degrees Celcius).
 
+### Obscured view
+The project has no safe-guard against false negatives. The device will not report if it's view is blocked. This could be resolved by placing static markers on both sides of an area to monitor and included in synthetic training data. Absence of at least one marker could trigger a notification that the view is obscured.
 
+![](img/marker.png "Markers to avoid false negatives")
 
-TinyML project to detect dangerous ice build-up on buildings.
+### Object scale
+Due to optimization techniques in Faster Objects - More Objects (FoMo) determining relative sizes of the icicles is not feasible. As even icicles with small mass can be harmful at moderate elevation this is not a crucial feature.
 
-https://www.youtube.com/watch?v=9H1gRQ6S7gg&t=23s
-https://www.insidescience.org/news/riddles-rippled-icicle
-https://link.brightcove.com/services/player/bcpid106573614001?bckey=AQ~~,AAAAGKlf6FE~,iSMGT5PckNvcgUb_ru5CAy2Tyv4G5OW3&bctid=2732728840001
+![](img/object-scale.png "Object scale")
 
-3D:
-Snow, particle effect
-Building, random
-Skybox
-    https://youtu.be/MRD-oAxaV8w
-    https://www.nvidia.com/en-us/on-demand/session/omniverse2020-om1417/
+### Exact number of icicles
+The object detection model has not been trained to give an exact number of icicles in view. This has no practical implication other than the model verification results appearing worse than practical performance.
 
-Icicle
+![](img/grouping.png "Icicle grouping")
 
-## Sun studies
-Window->Sun Study
+### Non-vertical icicles and snow
+Icicles can appear bent or angled either due to wind or more commonly due to ice and snow masses slowly dropping over roof edges. The dataset generated in this project does not cover this, but it would not take a lot of effort to extend the domain randomization to rotate or warp the icicles.
 
-## Semantics Schema Editor
-Replicator->Semantics Schema Editor
+![](img/AULSSON_EBBA.png "AULSSON_EBBA")
 
-Snow on roof
-Passer-byes
+![](img/Martin-Cathrae.png "Martin Cathrae")
 
-Blender export:
-Selection only
-Convert Orientation:
-Forward Axis: X
-Up Axis: Y
+The training images could benefit from simulating snow with particle effects in Omniverse. The project could also be extended to detect build-up of snow on roofs. For inspiration check out this demo of simulated snow dynamic made in 2014 by Walt Disney Animation Studios for the movie Frozen: 
 
-Select vertex on model (Edit Mode), Shift+S-> Cursor to selected
-(Object Mode) Select Hierarchy, Object>Set Origin\Origin to 3D Cursor
-(Object Mode) Shift+S\Cursor to World Origin
+[![Snow simulation](https://img.youtube.com/vi/9H1gRQ6S7gg/0.jpg)](https://youtu.be/9H1gRQ6S7gg)
 
+### Grayscale
+To be able to compile a representation of our neural network and have it run on the severely limited amount of RAM available on the Arduino Portena H7, pixel representation has been limited to a single channel - grayscale. Colors are not needed to detect icicles so this will not affect the results.
+
+![](img/grayscale1.png "Grayscale")
+
+## Further reading
+Insights into [how icicles are formed](https://www.insidescience.org/news/riddles-rippled-icicle).
