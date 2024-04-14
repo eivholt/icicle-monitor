@@ -26,13 +26,17 @@ Project [Impulse](https://studio.edgeimpulse.com/public/332581/live) and [Github
 ## Working principle
 Icicle formation is detected using a neural network (NN) designed to identify objects in images from the onboard camera. The NN is trained and tested exclusively on synthesized images. The images are generated with realistic simulated lighting conditions. A small amount of real images are used to verify the model.
 
-![](img/20240413_215105_.jpg "Arduino Portenta H7")
+[![Demo](https://img.youtube.com/vi/aIkj3uZ_MSE/0.jpg)](https://youtube.com/shorts/aIkj3uZ_MSE?feature=share)
 
 ## Challenges
 The main challenge of detecting forming icicles is the translucent nature of ice and natural variation of sunlight. Because of this we need a great number of images to train a model that captures enough features of the ice with varying lighting conditions. Capturing and annotating such a large dataset is incredibly labor intensive. We can mitigate this problem by synthesizing images with varying lighting conditions in a realistic manner and have the objects of interest automatically labeled.
 
+[![Sun study Omniverse extension](https://img.youtube.com/vi/qvDXRqBxECo/0.jpg)](https://youtu.be/qvDXRqBxECo)
+
 ## Mobility
 A powerful platform combined with a high resolution camera with fish-eye lens would increase the ability to detect icicles. However, by deploying the object detection model to a small, power-efficient, but highly constrained device, options for device installation increase. Properly protected against moisture this device can be mounted outdoors on walls or poles facing the roofs in question. LoRaWAN communication enables low battery consumption and long transmission range.
+
+![](img/20240413_215105_.jpg "Arduino Portenta H7")
 
 ## Object detection using neural network
 [FOMO (Faster Objects, More Objects)](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/object-detection/fomo-object-detection-for-constrained-devices) is a novel machine learning algorithm that allows for visual object detection on highly constrained devices through training of a neural network with a number of convolutional layers.
